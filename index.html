@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>FutROK</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    html, body {
+      width: 100vw;
+      height: 100dvh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden !important;
+      position: fixed;
+      inset: 0;
+      background-color: #0d0d0d;
+      color: #facc15;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      user-select: none;
+      touch-action: none;
+    }
+    button, input, select {
+      cursor: pointer;
+      position: relative;
+      z-index: 30;
+      touch-action: auto;
+    }
+    canvas {
+      background-color: #1a1a1a;
+      border: 2px solid #facc15;
+      box-shadow: 0 0 10px rgba(250, 204, 21, 0.2);
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .btn-yellow {
+      background-color: #facc15;
+      color: #000000;
+      font-weight: 700;
+    }
+    .btn-yellow:hover {
+      background-color: #eab308;
+    }
+    .btn-black {
+      background-color: #000000;
+      color: #facc15;
+      border: 2px solid #facc15;
+      font-weight: 700;
+    }
+    .input-dark {
+      background-color: #18181b;
+      border: 1px solid #3f3f46;
+      color: #ffffff;
+    }
+    .input-dark:focus {
+      border-color: #facc15;
+      outline: none;
+    }
+    #joystickBase {
+      position: absolute;
+      left: 20px;
+      bottom: 10px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: rgba(250, 204, 21, 0.15);
+      border: 2px solid rgba(250, 204, 21, 0.6);
+      display: none;
+      z-index: 20;
+      touch-action: none;
+    }
+    #joystickStick {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(250, 204, 21, 0.7);
+      border: 2px solid #facc15;
+      top: 25px;
+      left: 25px;
+      pointer-events: none;
+    }
+    #touchKickBtn {
+      position: absolute;
+      right: 20px;
+      bottom: 10px;
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      background: rgba(250, 204, 21, 0.3);
+      border: 2px solid #facc15;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #facc15;
+      font-weight: 900;
+      font-size: 10px;
+      z-index: 20;
+      box-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
+      user-select: none;
+    }
+    #chatDrawer, #playersDrawer {
+      z-index: 9999 !important;
+    }
+    #notificationModal {
+      z-index: 999999 !important;
+    }
+  </style>
+</head>
+<body class="w-full h-full flex flex-col justify-between p-1 overflow-hidden">
+
+  <!-- Pop-up de Boas-Vindas -->
+  <div id="welcomeModal" class="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-3">
+    <div class="bg-zinc-900 border-2 border-yellow-400 p-5 rounded-xl text-center max-w-xs shadow-2xl">
+      <h2 class="text-xl md:text-2xl font-extrabold text-yellow-400 mb-1">FutROK Online</h2>
+      <p class="text-xs text-zinc-200 mb-4 font-semibold">Seja bem-vindo ao FutROK! Divirta-se jogando!</p>
+      <button onclick="window.closeWelcomeModal()" class="w-full py-2.5 rounded btn-yellow uppercase font-bold tracking-wider text-xs">
+        Entrar no Jogo
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de Notificação -->
+  <div id="notificationModal" class="hidden fixed inset-0 bg-black/95 flex flex-col items-center justify-center p-3">
+    <div class="bg-zinc-900 border-2 border-yellow-400 p-5 rounded-xl text-center max-w-xs shadow-2xl">
+      <p id="notificationText" class="text-xs md:text-sm font-bold text-white mb-4 tracking-wide"></p>
+      <button onclick="window.closeNotificationModal()" class="w-full py-2 rounded btn-yellow uppercase font-bold tracking-wider text-xs">
+        OK
+      </button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="text-center relative w-full max-w-5xl mx-auto flex items-center justify-between px-2 shrink-0 h-[24px] md:h-[38px]">
+    <div></div>
+    <h1 class="text-xs md:text-2xl font-extrabold tracking-wider text-yellow-400 uppercase">FutROK</h1>
+    <div class="flex gap-1 md:gap-2 items-center z-30">
+      <button onclick="window.toggleFullScreen()" class="px-1.5 md:px-2 py-0.2 rounded btn-black text-[8px] md:text-xs">⛶ Tela Cheia</button>
+      <button id="btnToggleAudio" onclick="window.toggleAudioSystem()" class="px-1.5 md:px-2 py-0.2 rounded btn-black text-[8px] md:text-xs">🔊 <span id="audioStatusText">Off</span></button>
+      <button id="btnToggleSfx" onclick="window.toggleSfxSystem()" class="px-1.5 md:px-2 py-0.2 rounded btn-black text-[8px] md:text-xs">⚽ <span id="sfxStatusText">On</span></button>
+    </div>
+  </header>
+
+  <!-- LOBBY SCREEN -->
+  <div id="lobbyScreen" class="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-2 my-auto overflow-y-auto max-h-[calc(100dvh-50px)] p-1 shrink-0">
+    
+    <!-- Criar Sala Particular -->
+    <div class="bg-zinc-900 border-2 border-yellow-400/40 p-2.5 md:p-4 rounded-xl shadow-lg flex flex-col justify-between">
+      <div>
+        <h2 class="text-xs md:text-sm font-bold mb-1 text-yellow-400 border-b border-zinc-800 pb-1">Criar Sala Particular</h2>
+        <div class="space-y-2 mt-2">
+          <div>
+            <label class="block text-[8px] md:text-[10px] uppercase tracking-wider text-zinc-400">Nome da Sala</label>
+            <input type="text" id="roomNameInput" maxlength="15" placeholder="Nome..." class="w-full p-1 rounded input-dark text-xs">
+          </div>
+          <div>
+            <label class="block text-[8px] md:text-[10px] uppercase tracking-wider text-zinc-400">Seu Nick</label>
+            <input type="text" id="playerNameInput" maxlength="15" placeholder="Nick..." class="w-full p-1 rounded input-dark text-xs">
+          </div>
+        </div>
+      </div>
+      <button id="btnCreateRoomAction" onclick="window.confirmCreateRoom()" class="w-full py-1.5 md:py-2 mt-3 rounded btn-yellow text-center font-bold uppercase tracking-wider text-xs">
+        Criar Sala Particular
+      </button>
+    </div>
+
+    <!-- Salas Públicas e Entrar por Código -->
+    <div class="bg-zinc-900 border-2 border-yellow-400/40 p-2.5 md:p-4 rounded-xl shadow-lg flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between border-b border-zinc-800 pb-1 mb-1">
+          <h2 class="text-xs md:text-sm font-bold text-yellow-400">Salas Públicas</h2>
+        </div>
+        <div id="roomList" class="space-y-1 max-h-24 md:max-h-32 overflow-y-auto mb-1 pr-1">
+        </div>
+        <div class="border-t border-zinc-800 pt-1">
+          <h3 class="text-[8px] md:text-[10px] font-bold text-yellow-400 mb-1 uppercase">Entrar em Sala Particular</h3>
+          <div class="flex gap-1.5">
+            <input type="text" id="joinCodeInput" maxlength="3" class="w-20 md:w-28 p-1 rounded input-dark text-xs text-center font-mono tracking-widest" placeholder="000">
+            <button id="btnJoinCodeAction" onclick="window.joinByCode()" class="flex-1 py-1 rounded btn-yellow text-xs font-bold">Entrar por Código</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="gameScreen" class="hidden w-full max-w-5xl mx-auto flex flex-col items-center relative grow justify-between shrink-0 my-auto overflow-hidden h-[calc(100dvh-55px)]">
+    
+    <!-- Placar Exato com Relógio Centralizado como Eixo -->
+    <div class="w-full bg-zinc-900 border-2 border-yellow-400/40 rounded-t-lg px-2 py-0.2 flex items-center justify-between shrink-0 h-[26px] md:h-[32px] relative z-30">
+      
+      <!-- Esquerda: Chat + Time Amarelo alinhado até o centro exato -->
+      <div class="flex items-center gap-2 grow basis-0 justify-start">
+        <button onclick="window.toggleChatDrawer()" class="px-2 py-0.5 rounded btn-yellow text-[9px] md:text-xs font-extrabold flex items-center gap-1 shadow-md">
+          💬 Chat <span id="chatBadge" class="hidden w-2 h-2 rounded-full bg-red-600 inline-block"></span>
+        </button>
+
+        <div class="flex items-center gap-1 ml-auto mr-3">
+          <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block border border-black"></span>
+          <span class="font-bold text-yellow-400 text-[8px] md:text-xs">AMARELO</span>
+          <span id="scoreYellow" class="text-xs md:text-sm font-black text-white px-1">0</span>
+        </div>
+      </div>
+
+      <!-- Centro Perfeito: O Relógio (Os dois pontos ":" guiam o eixo central do campo) -->
+      <div class="shrink-0 px-2 text-center">
+        <span id="gameTimer" class="text-[9px] md:text-xs font-black font-mono text-yellow-400 tracking-widest leading-none">05:00</span>
+      </div>
+
+      <!-- Direita: Time Preto + Código da Sala + Botão Jogadores -->
+      <div class="flex items-center gap-2 grow basis-0 justify-end">
+        <div class="flex items-center gap-1 mr-auto ml-3">
+          <span id="scoreBlack" class="text-xs md:text-sm font-black text-white px-1">0</span>
+          <span class="font-bold text-zinc-300 text-[8px] md:text-xs">PRETO</span>
+          <span class="w-2 h-2 rounded-full bg-black inline-block border border-yellow-400"></span>
+        </div>
+
+        <!-- Código da Sala (Mantido no canto direito como você gostou) -->
+        <div id="roomCodeDisplay" class="hidden items-center gap-1 font-mono text-yellow-400 text-[9px] md:text-xs tracking-wider bg-zinc-800 px-1.5 py-0.5 rounded border border-yellow-400/40 mr-1">
+          <span>CÓDIGO:</span>
+          <span id="roomCodeText" class="font-bold text-white"></span>
+        </div>
+
+        <button onclick="window.togglePlayersDrawer()" class="px-2 py-0.5 rounded btn-yellow text-[9px] md:text-xs font-extrabold flex items-center gap-1 shadow-md">
+          👥 Jogadores
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Campo -->
+    <div id="canvasContainer" class="relative w-full flex justify-center bg-zinc-950 border-x-2 border-yellow-400/40 grow items-center overflow-hidden my-0">
+      <canvas id="gameCanvas"></canvas>
+
+      <div id="joystickBase">
+        <div id="joystickStick"></div>
+      </div>
+
+      <div id="touchKickBtn">CHUTAR</div>
+
+      <!-- CHAT -->
+      <div id="chatDrawer" class="hidden absolute top-2 left-2 md:top-2 md:left-2 bottom-20 md:bottom-auto w-72 md:w-80 h-56 md:h-64 bg-zinc-900 border-2 border-yellow-400 rounded-xl shadow-2xl flex flex-col p-2">
+        <div class="flex items-center justify-between border-b border-zinc-700 pb-1 mb-1 shrink-0">
+          <span class="text-xs font-bold text-yellow-400 uppercase tracking-wider">Chat da Partida</span>
+          <button onclick="window.toggleChatDrawer()" class="text-zinc-400 hover:text-white font-bold text-xs px-1.5 py-0.5 bg-zinc-800 rounded">✕</button>
+        </div>
+        
+        <div id="chatMessagesList" class="grow overflow-y-auto space-y-1 pr-1 text-[11px] text-zinc-200 font-sans mb-1.5">
+          <div class="text-zinc-500 italic text-[10px] text-center">Nenhuma mensagem ainda...</div>
+        </div>
+
+        <div class="flex gap-1 shrink-0">
+          <input type="text" id="chatInput" maxlength="1000" placeholder="Digite sua mensagem..." class="flex-1 p-1 rounded input-dark text-xs" onkeydown="if(event.key==='Enter') window.sendChatMessage()">
+          <button onclick="window.sendChatMessage()" class="px-2.5 py-1 rounded btn-yellow text-xs font-bold">Enviar</button>
+        </div>
+      </div>
+
+      <!-- JOGADORES NA SALA -->
+      <div id="playersDrawer" class="hidden absolute top-2 right-2 md:top-2 md:right-2 bottom-20 md:bottom-auto w-72 md:w-80 h-56 md:h-64 bg-zinc-900 border-2 border-yellow-400 rounded-xl shadow-2xl flex flex-col p-2">
+        <div class="flex items-center justify-between border-b border-zinc-700 pb-1 mb-1 shrink-0">
+          <span class="text-xs font-bold text-yellow-400 uppercase tracking-wider">Jogadores na Sala</span>
+          <button onclick="window.togglePlayersDrawer()" class="text-zinc-400 hover:text-white font-bold text-xs px-1.5 py-0.5 bg-zinc-800 rounded">✕</button>
+        </div>
+        
+        <div id="playersManagementList" class="grow overflow-y-auto space-y-1.5 pr-1 text-[11px] text-zinc-200 font-sans mb-1.5">
+        </div>
+      </div>
+
+      <div id="victoryModal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center z-40">
+        <div class="bg-zinc-900 border-2 border-yellow-400 p-3 rounded-xl text-center max-w-xs shadow-2xl">
+          <p id="victoryMessage" class="text-xs font-black tracking-wide mb-2 uppercase"></p>
+          <button id="btnVictoryExitAction" onclick="window.leaveRoom()" class="w-full py-1.5 rounded btn-yellow uppercase font-bold tracking-wider text-[10px]">
+            Voltar ao Menu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rodapé da Partida -->
+    <div class="w-full bg-zinc-900 border-2 border-yellow-400/40 rounded-b-lg px-2 py-0.2 flex items-center justify-between text-[8px] shrink-0 h-[18px] md:h-[22px] z-30">
+      <span id="roomTitleDisplay" class="text-[7px] text-zinc-400 font-mono"></span>
+      <button id="btnLeaveGameAction" onclick="window.leaveRoom()" class="px-2 py-0.1 rounded bg-red-600 hover:bg-red-700 text-white font-bold text-[7px] md:text-[9px] shadow-md">
+        Sair da Sala
+      </button>
+    </div>
+
+    <div class="w-full text-center text-[8px] md:text-[10px] text-zinc-400 font-mono tracking-wider shrink-0 h-[14px] flex items-center justify-center font-bold z-30">
+      Criado por Wanluupier
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer id="mainFooter" class="text-center text-[8px] md:text-[10px] text-zinc-400 font-mono tracking-wider shrink-0 h-[14px] flex items-center justify-center font-bold z-30">
+    Criado por Wanluupier
+  </footer>
+
+  <script>
+    try {
+      for (let key in localStorage) {
+        if (key.startsWith('futrok_banned_')) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch(e){}
+
+    document.addEventListener('touchmove', function(e) {
+      if (!e.target.closest('#roomList') && !e.target.closest('#chatDrawer') && !e.target.closest('#playersDrawer')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    let peer = null;
+    let conn = null;
+    let connections = [];
+    let isHost = false;
+    let intentionalLeave = false;
+    let isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+    let chatMessages = [];
+    let myPlayerName = "";
+
+    let myPersistentClientId = localStorage.getItem('futrok_client_id');
+    if (!myPersistentClientId) {
+      myPersistentClientId = 'c_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+      localStorage.setItem('futrok_client_id', myPersistentClientId);
+    }
+
+    const menuAudio = new Audio('https://file.garden/auM94U70ENQrkExn/menu.mp3');
+    menuAudio.loop = true;
+    menuAudio.volume = 0.35;
+
+    const matchAudio = new Audio('https://file.garden/auM94U70ENQrkExn/jogo.mp3');
+    matchAudio.loop = true;
+    matchAudio.volume = 0.12;
+
+    let audioEnabled = false;
+    let sfxEnabled = true;
+
+    const PUBLIC_ROOMS = [
+      { id: 'futrok_room_pub_1N', name: '1N' },
+      { id: 'futrok_room_pub_2A', name: '2A' },
+      { id: 'futrok_room_pub_3M', name: '3M' },
+      { id: 'futrok_room_pub_4E', name: '4E' },
+      { id: 'futrok_room_pub_5V', name: '5V' },
+      { id: 'futrok_room_pub_6A', name: '6A' },
+      { id: 'futrok_room_pub_7M', name: '7M' },
+      { id: 'futrok_room_pub_8A', name: '8A' }
+    ];
+
+    window.showNotification = function(message) {
+      document.getElementById('notificationText').innerText = message;
+      document.getElementById('notificationModal').classList.remove('hidden');
+    };
+
+    window.closeNotificationModal = function() {
+      document.getElementById('notificationModal').classList.add('hidden');
+      window.forceReturnToMenu();
+    };
+
+    window.forceReturnToMenu = function() {
+      intentionalLeave = true;
+      if (conn) { try { conn.close(); } catch(e){} conn = null; }
+      connections.forEach(c => { try { c.close(); } catch(e){} });
+      connections = [];
+      if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
+
+      currentRoom = null;
+      isHost = false;
+      players = {};
+      chatMessages = [];
+
+      playMenuMusic();
+
+      document.getElementById('gameScreen').classList.add('hidden');
+      document.getElementById('lobbyScreen').classList.remove('hidden');
+      document.getElementById('mainFooter').classList.remove('hidden');
+      document.getElementById('victoryModal').classList.add('hidden');
+      document.getElementById('chatDrawer').classList.add('hidden');
+      document.getElementById('playersDrawer').classList.add('hidden');
+      window.refreshRoomList();
+    };
+
+    window.closeWelcomeModal = function() {
+      audioEnabled = true;
+      document.getElementById('audioStatusText').innerText = "On";
+      initAudio();
+      playMenuMusic();
+
+      document.getElementById('welcomeModal').style.display = 'none';
+
+      if (isTouchDevice) {
+        document.getElementById('joystickBase').style.display = 'block';
+        document.getElementById('touchKickBtn').style.display = 'flex';
+      }
+    };
+
+    window.toggleAudioSystem = function() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('audioStatusText').innerText = audioEnabled ? "On" : "Off";
+      if (audioEnabled) {
+        initAudio();
+        if (currentRoom) playMatchMusic();
+        else playMenuMusic();
+      } else {
+        menuAudio.pause();
+        matchAudio.pause();
+      }
+    };
+
+    window.toggleSfxSystem = function() {
+      sfxEnabled = !sfxEnabled;
+      document.getElementById('sfxStatusText').innerText = sfxEnabled ? "On" : "Off";
+    };
+
+    window.toggleFullScreen = function() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    };
+
+    window.toggleChatDrawer = function() {
+      const drawer = document.getElementById('chatDrawer');
+      drawer.classList.toggle('hidden');
+      if (!drawer.classList.contains('hidden')) {
+        document.getElementById('chatBadge').classList.add('hidden');
+        const listEl = document.getElementById('chatMessagesList');
+        listEl.scrollTop = listEl.scrollHeight;
+      }
+    };
+
+    window.togglePlayersDrawer = function() {
+      const drawer = document.getElementById('playersDrawer');
+      drawer.classList.toggle('hidden');
+      if (!drawer.classList.contains('hidden')) {
+        renderPlayersManagement();
+      }
+    };
+
+    window.sendChatMessage = function() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const msgObj = {
+        sender: myPlayerName !== "" ? myPlayerName : "Anônimo",
+        text: text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      chatMessages.push(msgObj);
+      input.value = "";
+      renderChatMessages();
+
+      if (isHost) {
+        broadcastChatState();
+      } else if (conn && conn.open) {
+        conn.send({ type: 'CHAT_MESSAGE', message: msgObj });
+      }
+    };
+
+    function renderChatMessages() {
+      const listEl = document.getElementById('chatMessagesList');
+      if (chatMessages.length === 0) {
+        listEl.innerHTML = `<div class="text-zinc-500 italic text-[10px] text-center">Nenhuma mensagem ainda...</div>`;
+        return;
+      }
+
+      listEl.innerHTML = chatMessages.map(m => `
+        <div class="bg-zinc-800/80 p-1 rounded border border-zinc-700/50 mb-1 break-words">
+          <span class="font-bold text-yellow-400">${escapeHtml(m.sender)}</span> <span class="text-[9px] text-zinc-400">(${m.time})</span>:
+          <div class="text-zinc-100 mt-0.5">${escapeHtml(m.text)}</div>
+        </div>
+      `).join('');
+
+      listEl.scrollTop = listEl.scrollHeight;
+    }
+
+    function renderPlayersManagement() {
+      const listEl = document.getElementById('playersManagementList');
+      const playerList = Object.values(players);
+
+      if (playerList.length === 0) {
+        listEl.innerHTML = `<div class="text-zinc-500 italic text-[10px] text-center">Nenhum jogador na sala.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = playerList.map(p => {
+        const isMe = p.id === localPlayerId;
+        return `
+          <div class="bg-zinc-800 p-1.5 rounded flex items-center justify-between border border-zinc-700 mb-1">
+            <span class="font-bold text-white text-xs truncate max-w-[150px]">${escapeHtml(p.name || "Sem Nome")} ${isMe ? '(Você)' : ''}</span>
+            <span class="text-[9px] text-zinc-400">${p.id === currentRoom?.hostId ? 'Host' : 'Jogador'}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    function broadcastChatState() {
+      connections.forEach(client => {
+        if (client.open) {
+          client.send({ type: 'CHAT_SYNC', messages: chatMessages });
+        }
+      });
+    }
+
+    function playMenuMusic() {
+      matchAudio.pause();
+      matchAudio.currentTime = 0;
+      if (!audioEnabled) return;
+      menuAudio.play().catch(e => {});
+    }
+
+    function playMatchMusic() {
+      menuAudio.pause();
+      menuAudio.currentTime = 0;
+      if (!audioEnabled) return;
+      matchAudio.play().catch(e => {});
+    }
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioCtx();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playKickSound() {
+      if (!sfxEnabled) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+      } catch (e) {}
+    }
+
+    function playBounceSound() {
+      if (!sfxEnabled) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.08);
+      } catch (e) {}
+    }
+
+    function playGoalSound() {
+      if (!sfxEnabled) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.6);
+      } catch (e) {}
+    }
+
+    function playVictoryTune() {
+      if (!sfxEnabled) return;
+      try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const notes = [261.63, 329.63, 392.00, 523.25];
+        notes.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+          gain.gain.setValueAtTime(0.2, now + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.3);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + idx * 0.12);
+          osc.stop(now + idx * 0.12 + 0.3);
+        });
+      } catch (e) {}
+    }
+
+    let currentRoom = null;
+    let localPlayerId = myPersistentClientId;
+    let assignedTeam = 'yellow';
+    let isGameOver = false;
+    let gameMatchTime = 300;
+    let matchTimerInterval = null;
+    let goalLock = false;
+
+    const FIELD_CONFIG = { width: 800, height: 460, goalSize: 110 };
+    const PLAYER_DEFAULTS = { radius: 16, accel: 0.19, damping: 0.90, kickPower: 9.5 };
+    const MAX_PLAYERS_PER_ROOM = 4;
+
+    let canvas = document.getElementById('gameCanvas');
+    let ctx = canvas.getContext('2d');
+
+    let players = {};
+    let ball = { x: 400, y: 230, vx: 0, vy: 0, radius: 10, damping: 0.965, hidden: false };
+    let scores = { yellow: 0, black: 0 };
+    let keys = {};
+
+    let joystickTouchId = null;
+    let joystickVector = { x: 0, y: 0 };
+
+    let lastFrameTime = performance.now();
+
+    const joystickBase = document.getElementById('joystickBase');
+    const joystickStick = document.getElementById('joystickStick');
+    const kickBtn = document.getElementById('touchKickBtn');
+
+    joystickBase.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (joystickTouchId === null) {
+        const touch = e.changedTouches[0];
+        joystickTouchId = touch.identifier;
+      }
+    });
+
+    joystickBase.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === joystickTouchId) {
+          const rect = joystickBase.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          let dx = touch.clientX - centerX;
+          let dy = touch.clientY - centerY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const maxDist = 30;
+
+          if (dist > maxDist) {
+            dx = (dx / dist) * maxDist;
+            dy = (dy / dist) * maxDist;
+          }
+
+          joystickStick.style.transform = `translate(${dx}px, ${dy}px)`;
+          joystickVector.x = dx / maxDist;
+          joystickVector.y = dy / maxDist;
+        }
+      }
+    });
+
+    const resetJoystick = (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === joystickTouchId) {
+          joystickTouchId = null;
+          joystickVector.x = 0;
+          joystickVector.y = 0;
+          joystickStick.style.transform = `translate(0px, 0px)`;
+        }
+      }
+    };
+
+    window.addEventListener('touchend', resetJoystick);
+    window.addEventListener('touchcancel', resetJoystick);
+
+    function triggerKick() {
+      keys[' '] = true;
+      if (!isHost && conn && conn.open) {
+        conn.send({ type: 'PLAYER_KICK', playerId: localPlayerId });
+      }
+    }
+
+    kickBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      triggerKick();
+    });
+    kickBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      keys[' '] = false;
+    });
+
+    window.addEventListener('keydown', (e) => { 
+      if (['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase())) return;
+      const key = e.key.toLowerCase();
+      if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key)) {
+        e.preventDefault();
+      }
+      if (key === ' ') triggerKick();
+      else keys[key] = true; 
+    });
+
+    window.addEventListener('keyup', (e) => { 
+      if (['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase())) return;
+      keys[e.key.toLowerCase()] = false; 
+    });
+
+    function generateThreeDigitCode() {
+      let code = '';
+      for (let i = 0; i < 3; i++) {
+        code += Math.floor(Math.random() * 10).toString();
+      }
+      return code;
+    }
+
+    function initPeer(customId, onReady) {
+      if (peer && !peer.destroyed) {
+        if (peer.id === customId || !customId) {
+          if (onReady) onReady();
+          return;
+        } else {
+          peer.destroy();
+          peer = null;
+        }
+      }
+      
+      const peerOptions = {
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
+      };
+
+      peer = customId ? new Peer(customId, peerOptions) : new Peer(peerOptions);
+      
+      peer.on('open', (id) => {
+        if (onReady) onReady();
+      });
+
+      peer.on('connection', (incomingConn) => {
+        if (isHost) {
+          const currentTotal = Object.keys(players).length + 1;
+          if (currentTotal > MAX_PLAYERS_PER_ROOM) {
+            incomingConn.on('open', () => {
+              incomingConn.send({ type: 'ROOM_FULL' });
+              setTimeout(() => incomingConn.close(), 500);
+            });
+            return;
+          }
+          connections.push(incomingConn);
+          setupHostConnection(incomingConn);
+        }
+      });
+
+      peer.on('error', (err) => {
+        if (err.type === 'unavailable-id') {
+          if (onReady) onReady();
+        }
+      });
+    }
+
+    function setupHostConnection(c) {
+      c.on('data', (data) => {
+        if (data.type === 'JOIN_REQUEST') {
+          if (Object.keys(players).length >= MAX_PLAYERS_PER_ROOM) {
+            c.send({ type: 'ROOM_FULL' });
+            return;
+          }
+
+          const totalPlayersCount = Object.keys(players).length;
+          const newTeam = (totalPlayersCount % 2 === 0) ? 'yellow' : 'black';
+          const cleanName = data.name !== undefined ? data.name.trim() : "";
+          
+          players[data.playerId] = {
+            id: data.playerId,
+            name: cleanName,
+            team: newTeam,
+            x: newTeam === 'yellow' ? FIELD_CONFIG.width * 0.25 : FIELD_CONFIG.width * 0.75,
+            y: FIELD_CONFIG.height / 2,
+            vx: 0,
+            vy: 0,
+            radius: PLAYER_DEFAULTS.radius,
+            accel: PLAYER_DEFAULTS.accel,
+            damping: PLAYER_DEFAULTS.damping,
+            inputs: { ax: 0, ay: 0 }
+          };
+
+          c.send({ 
+            type: 'WELCOME', 
+            players, 
+            ball, 
+            scores, 
+            assignedTeam: newTeam,
+            roomType: 'privada',
+            roomCode: (currentRoom && currentRoom.code) ? currentRoom.code : '',
+            chatMessages: chatMessages
+          });
+
+          broadcastState();
+          renderPlayersManagement();
+        } else if (data.type === 'PLAYER_MOVE') {
+          if (players[data.playerId]) {
+            players[data.playerId].inputs = data.inputs || { ax: 0, ay: 0 };
+          }
+        } else if (data.type === 'PLAYER_KICK') {
+          playKickSound();
+          const p = players[data.playerId];
+          if (p) {
+            const dx = ball.x - p.x;
+            const dy = ball.y - p.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < p.radius + ball.radius + 18) {
+              const nx = dx / (dist || 1);
+              const ny = dy / (dist || 1);
+              ball.vx = nx * PLAYER_DEFAULTS.kickPower;
+              ball.vy = ny * PLAYER_DEFAULTS.kickPower;
+            }
+          }
+        } else if (data.type === 'CHAT_MESSAGE') {
+          chatMessages.push(data.message);
+          renderChatMessages();
+          if (document.getElementById('chatDrawer').classList.contains('hidden')) {
+            document.getElementById('chatBadge').classList.remove('hidden');
+          }
+          broadcastChatState();
+        }
+      });
+
+      c.on('close', () => { handleClientDisconnection(c); });
+      c.on('error', () => { handleClientDisconnection(c); });
+    }
+
+    function handleClientDisconnection(c) {
+      connections = connections.filter(conn => conn !== c);
+      for (let id in players) {
+        if (id !== localPlayerId) {
+          delete players[id];
+        }
+      }
+      broadcastState();
+      renderPlayersManagement();
+    }
+
+    function broadcastState() {
+      connections.forEach(client => {
+        if (client.open) {
+          client.send({ type: 'STATE_SYNC', players, ball, scores, hostId: localPlayerId });
+        }
+      });
+      try {
+        let counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}');
+        if (currentRoom && currentRoom.type === 'publica') {
+          counts[currentRoom.id] = Object.keys(players).length;
+          localStorage.setItem('futrok_player_counts', JSON.stringify(counts));
+        }
+      } catch(e){}
+    }
+
+    window.confirmCreateRoom = function() {
+      const roomName = document.getElementById('roomNameInput').value.trim() || "Sala Particular";
+      const playerName = document.getElementById('playerNameInput').value.trim();
+      myPlayerName = playerName;
+      const roomCode = generateThreeDigitCode();
+
+      const customPeerId = 'frk_p_' + roomCode;
+
+      chatMessages = [];
+      intentionalLeave = false;
+      initPeer(customPeerId, () => {
+        currentRoom = {
+          id: peer.id,
+          code: roomCode,
+          name: roomName,
+          type: 'privada',
+          hostId: peer.id,
+          timestamp: Date.now()
+        };
+        isHost = true;
+        assignedTeam = 'yellow';
+
+        initGameSession(playerName);
+      });
+    };
+
+    window.joinByCode = function() {
+      const inputCode = document.getElementById('joinCodeInput').value.trim();
+      const playerName = document.getElementById('playerNameInput').value.trim();
+      myPlayerName = playerName;
+      
+      if (!inputCode || inputCode.length !== 3) {
+        alert("Digite um código válido de 3 números.");
+        return;
+      }
+
+      const targetHostId = 'frk_p_' + inputCode;
+      connectToHost(targetHostId, playerName, "Sala Particular", 'privada');
+    };
+
+    window.joinPublicRoom = function(roomId, roomName) {
+      const playerName = document.getElementById('playerNameInput').value.trim();
+      myPlayerName = playerName;
+      connectToHost(roomId, playerName, roomName, 'publica');
+    };
+
+    function connectToHost(hostId, playerName, roomName = "Partida Online", roomType = 'privada') {
+      intentionalLeave = false;
+      initPeer(null, () => {
+        conn = peer.connect(hostId, { reliable: true });
+        
+        let connected = false;
+
+        const timeout = setTimeout(() => {
+          if (!connected) {
+            if (conn) { try { conn.close(); } catch(e){} }
+            
+            if (roomType === 'publica') {
+              if (peer) { peer.destroy(); peer = null; }
+              initPeer(hostId, () => {
+                currentRoom = { id: hostId, name: roomName, type: 'publica', hostId: peer.id };
+                isHost = true;
+                assignedTeam = 'yellow';
+                chatMessages = [];
+                initGameSession(playerName);
+              });
+            } else {
+              alert("Esta sala particular não está aberta no momento.");
+            }
+          }
+        }, 2000);
+
+        conn.on('open', () => {
+          clearTimeout(timeout);
+          connected = true;
+          isHost = false;
+          currentRoom = { id: hostId, name: roomName, type: roomType };
+          conn.send({ type: 'JOIN_REQUEST', name: playerName, playerId: localPlayerId });
+        });
+
+        conn.on('data', (data) => {
+          if (data.type === 'ROOM_FULL') {
+            alert("Esta sala já está cheia (limite de 4 jogadores)!");
+            window.leaveRoom();
+            return;
+          }
+          if (data.type === 'WELCOME') {
+            assignedTeam = data.assignedTeam;
+            players = data.players;
+            ball = data.ball;
+            scores = data.scores;
+            currentRoom.type = data.roomType || roomType;
+            if (data.roomCode) {
+              currentRoom.code = data.roomCode;
+            }
+            chatMessages = data.chatMessages || [];
+            initGameSession(playerName);
+          } else if (data.type === 'STATE_SYNC') {
+            if (!currentRoom) return;
+            players = data.players;
+            ball = data.ball;
+            scores = data.scores;
+            document.getElementById('scoreYellow').innerText = scores.yellow;
+            document.getElementById('scoreBlack').innerText = scores.black;
+            if (!document.getElementById('playersDrawer').classList.contains('hidden')) {
+              renderPlayersManagement();
+            }
+          } else if (data.type === 'GOAL_EVENT') {
+            scores = data.scores;
+            document.getElementById('scoreYellow').innerText = scores.yellow;
+            document.getElementById('scoreBlack').innerText = scores.black;
+            playGoalSound();
+          } else if (data.type === 'GAME_OVER') {
+            displayVictoryScreen(data.winnerTeam);
+          } else if (data.type === 'CHAT_SYNC') {
+            chatMessages = data.messages || [];
+            renderChatMessages();
+            if (document.getElementById('chatDrawer').classList.contains('hidden')) {
+              document.getElementById('chatBadge').classList.remove('hidden');
+            }
+          }
+        });
+
+        conn.on('close', () => {
+          if (!intentionalLeave && currentRoom) {
+            alert("Partida encerrada: o Host saiu da sala.");
+          }
+          window.leaveRoom();
+        });
+
+        conn.on('error', () => {
+          if (!intentionalLeave && currentRoom) {
+            alert("Partida encerrada: o Host saiu da sala.");
+          }
+          window.leaveRoom();
+        });
+      });
+    }
+
+    window.refreshRoomList = function() {
+      const listEl = document.getElementById('roomList');
+      let counts = {};
+      try {
+        counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}');
+      } catch(e){}
+
+      listEl.innerHTML = PUBLIC_ROOMS.map(r => {
+        const playerCount = counts[r.id] || 0;
+        return `
+          <div class="p-1.5 bg-zinc-800 rounded flex items-center justify-between border border-zinc-700 mb-1">
+            <div>
+              <div class="font-bold text-yellow-400 text-xs">Sala ${r.name} <span class="text-[9px] text-zinc-400 font-normal">(${playerCount}/4 jogadores)</span></div>
+            </div>
+            <button onclick="window.joinPublicRoom('${r.id}', 'Sala ${r.name}')" class="px-2.5 py-0.5 rounded btn-yellow text-xs font-bold">Entrar</button>
+          </div>
+        `;
+      }).join('');
+    };
+
+    function initGameSession(playerName) {
+      document.getElementById('lobbyScreen').classList.add('hidden');
+      document.getElementById('mainFooter').classList.add('hidden');
+      document.getElementById('gameScreen').classList.remove('hidden');
+      document.getElementById('victoryModal').classList.add('hidden');
+      document.getElementById('chatDrawer').classList.add('hidden');
+      document.getElementById('playersDrawer').classList.add('hidden');
+      document.getElementById('chatBadge').classList.add('hidden');
+
+      renderChatMessages();
+      playMatchMusic();
+
+      canvas.width = FIELD_CONFIG.width;
+      canvas.height = FIELD_CONFIG.height;
+
+      keys = {};
+      joystickVector = { x: 0, y: 0 };
+      lastFrameTime = performance.now();
+
+      const codeDisplayEl = document.getElementById('roomCodeDisplay');
+      const codeTextEl = document.getElementById('roomCodeText');
+      if (currentRoom.type === 'privada' && currentRoom.code) {
+        codeTextEl.innerText = currentRoom.code;
+        codeDisplayEl.style.display = 'flex';
+      } else {
+        codeDisplayEl.style.display = 'none';
+      }
+
+      document.getElementById('roomTitleDisplay').innerText = currentRoom.name || "Partida Online";
+
+      resetBall();
+      scores = { yellow: 0, black: 0 };
+      document.getElementById('scoreYellow').innerText = "0";
+      document.getElementById('scoreBlack').innerText = "0";
+
+      if (isHost) {
+        players = {};
+        players[localPlayerId] = {
+          id: localPlayerId,
+          name: playerName,
+          team: assignedTeam,
+          x: assignedTeam === 'yellow' ? FIELD_CONFIG.width * 0.25 : FIELD_CONFIG.width * 0.75,
+          y: FIELD_CONFIG.height / 2,
+          vx: 0,
+          vy: 0,
+          radius: PLAYER_DEFAULTS.radius,
+          accel: PLAYER_DEFAULTS.accel,
+          damping: PLAYER_DEFAULTS.damping,
+          inputs: { ax: 0, ay: 0 }
+        };
+        broadcastState();
+        renderPlayersManagement();
+      }
+
+      startMatchTimer();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function startMatchTimer() {
+      if (matchTimerInterval) clearInterval(matchTimerInterval);
+      gameMatchTime = 300;
+      isGameOver = false;
+      goalLock = false;
+
+      matchTimerInterval = setInterval(() => {
+        if (gameMatchTime > 0 && !isGameOver) {
+          gameMatchTime--;
+          updateTimerDisplay();
+        } else if (gameMatchTime <= 0 && !isGameOver) {
+          finishMatch();
+        }
+      }, 1000);
+
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+      const minutes = Math.floor(gameMatchTime / 60);
+      const seconds = gameMatchTime % 60;
+      document.getElementById('gameTimer').innerText = 
+        String(minutes).padStart(2, '0') + ":" + String(seconds).padStart(2, '0');
+    }
+
+    function finishMatch() {
+      if (isGameOver) return;
+      isGameOver = true;
+      if (matchTimerInterval) clearInterval(matchTimerInterval);
+
+      playVictoryTune();
+
+      let winner = 'empate';
+      if (scores.yellow > scores.black) winner = 'yellow';
+      else if (scores.black > scores.yellow) winner = 'black';
+
+      displayVictoryScreen(winner);
+
+      if (isHost) {
+        connections.forEach(c => {
+          if (c.open) c.send({ type: 'GAME_OVER', winnerTeam: winner });
+        });
+      }
+    }
+
+    function displayVictoryScreen(winnerTeam) {
+      const msgEl = document.getElementById('victoryMessage');
+      if (winnerTeam === 'yellow') {
+        msgEl.className = "text-xs md:text-sm font-black tracking-wide mb-2 uppercase text-yellow-400";
+        msgEl.innerText = "FIM DE JOGO - VITÓRIA DO TIME AMARELO!";
+      } else if (winnerTeam === 'black') {
+        msgEl.className = "text-xs md:text-sm font-black tracking-wide mb-2 uppercase text-zinc-200";
+        msgEl.innerText = "FIM DE JOGO - VITÓRIA DO TIME PRETO!";
+      } else {
+        msgEl.className = "text-xs md:text-sm font-black tracking-wide mb-2 uppercase text-white";
+        msgEl.innerText = "FIM DE JOGO - EMPATE!";
+      }
+
+      document.getElementById('victoryModal').classList.remove('hidden');
+    }
+
+    window.leaveRoom = function() {
+      intentionalLeave = true;
+
+      if (currentRoom && currentRoom.type === 'publica') {
+        try {
+          let counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}');
+          counts[currentRoom.id] = 0;
+          localStorage.setItem('futrok_player_counts', JSON.stringify(counts));
+        } catch(e){}
+      }
+
+      if (conn) {
+        try { conn.close(); } catch(e){}
+        conn = null;
+      }
+      connections.forEach(c => { try { c.close(); } catch(e){} });
+      connections = [];
+
+      if (peer) {
+        peer.destroy();
+        peer = null;
+      }
+
+      currentRoom = null;
+      isHost = false;
+      players = {};
+      chatMessages = [];
+      
+      playMenuMusic();
+
+      document.getElementById('gameScreen').classList.add('hidden');
+      document.getElementById('lobbyScreen').classList.remove('hidden');
+      document.getElementById('mainFooter').classList.remove('hidden');
+      document.getElementById('victoryModal').classList.add('hidden');
+      document.getElementById('chatDrawer').classList.add('hidden');
+      document.getElementById('playersDrawer').classList.add('hidden');
+      window.refreshRoomList();
+    };
+
+    function resetBall() {
+      ball.x = FIELD_CONFIG.width / 2;
+      ball.y = FIELD_CONFIG.height / 2;
+      ball.vx = 0;
+      ball.vy = 0;
+      ball.hidden = false;
+    }
+
+    function gameLoop(currentTime) {
+      if (!currentRoom) return;
+
+      const dt = (currentTime - lastFrameTime) / 16.6667;
+      lastFrameTime = currentTime;
+
+      updatePhysics(Math.min(dt, 2.0));
+      renderField();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function updatePhysics(dt) {
+      const p = players[localPlayerId];
+      if (!p || isGameOver) return;
+
+      let ax = 0;
+      let ay = 0;
+
+      if (keys['arrowleft'] || keys['a']) ax -= p.accel;
+      if (keys['arrowright'] || keys['d']) ax += p.accel;
+      if (keys['arrowup'] || keys['w']) ay -= p.accel;
+      if (keys['arrowdown'] || keys['s']) ay += p.accel;
+
+      if (joystickVector.x !== 0 || joystickVector.y !== 0) {
+        ax += joystickVector.x * p.accel;
+        ay += joystickVector.y * p.accel;
+      }
+
+      if (isHost) {
+        p.inputs = { ax, ay };
+
+        Object.values(players).forEach(pl => {
+          const input = pl.inputs || { ax: 0, ay: 0 };
+          pl.vx += input.ax * dt;
+          pl.vy += input.ay * dt;
+          pl.vx *= Math.pow(pl.damping, dt);
+          pl.vy *= Math.pow(pl.damping, dt);
+
+          pl.x += pl.vx * dt;
+          pl.y += pl.vy * dt;
+
+          pl.x = Math.max(pl.radius, Math.min(FIELD_CONFIG.width - pl.radius, pl.x));
+          pl.y = Math.max(pl.radius, Math.min(FIELD_CONFIG.height - pl.radius, pl.y));
+        });
+
+        if (!ball.hidden) {
+          ball.x += ball.vx * dt;
+          ball.y += ball.vy * dt;
+          ball.vx *= Math.pow(ball.damping, dt);
+          ball.vy *= Math.pow(ball.damping, dt);
+        }
+
+        const plArray = Object.values(players);
+        for (let i = 0; i < plArray.length; i++) {
+          for (let j = i + 1; j < plArray.length; j++) {
+            const p1 = plArray[i];
+            const p2 = plArray[j];
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = p1.radius + p2.radius;
+
+            if (dist < minDist) {
+              const nx = dx / (dist || 1);
+              const ny = dy / (dist || 1);
+              const overlap = (minDist - dist) * 0.5;
+
+              p1.x -= nx * overlap;
+              p1.y -= ny * overlap;
+              p2.x += nx * overlap;
+              p2.y += ny * overlap;
+            }
+          }
+        }
+
+        if (!ball.hidden) {
+          Object.values(players).forEach(pl => {
+            const dx = ball.x - pl.x;
+            const dy = ball.y - pl.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = pl.radius + ball.radius;
+
+            if (dist < minDist) {
+              const nx = dx / (dist || 1);
+              const ny = dy / (dist || 1);
+
+              const overlap = minDist - dist;
+              ball.x += nx * overlap;
+              ball.y += ny * overlap;
+
+              ball.vx = pl.vx * 1.05 + nx * 0.45;
+              ball.vy = pl.vy * 1.05 + ny * 0.45;
+            }
+          });
+
+          if (keys[' '] || keys['x']) {
+            keys[' '] = false;
+            keys['x'] = false;
+            const dx = ball.x - p.x;
+            const dy = ball.y - p.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < p.radius + ball.radius + 18) {
+              const nx = dx / (dist || 1);
+              const ny = dy / (dist || 1);
+              ball.vx = nx * PLAYER_DEFAULTS.kickPower;
+              ball.vy = ny * PLAYER_DEFAULTS.kickPower;
+              playKickSound();
+            }
+          }
+        }
+
+        broadcastState();
+
+      } else if (conn && conn.open) {
+        conn.send({ type: 'PLAYER_MOVE', playerId: localPlayerId, inputs: { ax, ay } });
+      }
+
+      if (!ball.hidden && isHost) {
+        const goalTop = (FIELD_CONFIG.height - FIELD_CONFIG.goalSize) / 2;
+        const goalBottom = (FIELD_CONFIG.height + FIELD_CONFIG.goalSize) / 2;
+
+        if (ball.y - ball.radius < 0) {
+          ball.y = ball.radius;
+          ball.vy *= -0.6;
+          playBounceSound();
+        }
+        if (ball.y + ball.radius > FIELD_CONFIG.height) {
+          ball.y = FIELD_CONFIG.height - ball.radius;
+          ball.vy *= -0.6;
+          playBounceSound();
+        }
+
+        if (ball.x - ball.radius < 0) {
+          if (ball.y > goalTop && ball.y < goalBottom) {
+            if (!goalLock) triggerGoal('black');
+          } else {
+            ball.x = ball.radius;
+            ball.vx *= -0.6;
+            playBounceSound();
+          }
+        }
+
+        if (ball.x + ball.radius > FIELD_CONFIG.width) {
+          if (ball.y > goalTop && ball.y < goalBottom) {
+            if (!goalLock) triggerGoal('yellow');
+          } else {
+            ball.x = FIELD_CONFIG.width - ball.radius;
+            ball.vx *= -0.6;
+            playBounceSound();
+          }
+        }
+      }
+    }
+
+    function triggerGoal(teamScored) {
+      goalLock = true;
+      ball.hidden = true;
+      ball.vx = 0;
+      ball.vy = 0;
+
+      scores[teamScored]++;
+
+      document.getElementById('scoreYellow').innerText = scores.yellow;
+      document.getElementById('scoreBlack').innerText = scores.black;
+
+      playGoalSound();
+
+      if (isHost) {
+        connections.forEach(c => {
+          if (c.open) c.send({ type: 'GOAL_EVENT', scores });
+        });
+      }
+
+      if (scores[teamScored] >= 10) {
+        finishMatch();
+      } else {
+        setTimeout(() => {
+          resetBall();
+          goalLock = false;
+        }, 1200);
+      }
+    }
+
+    function renderField() {
+      ctx.clearRect(0, 0, FIELD_CONFIG.width, FIELD_CONFIG.height);
+
+      ctx.fillStyle = "#18181b";
+      ctx.fillRect(0, 0, FIELD_CONFIG.width, FIELD_CONFIG.height);
+
+      ctx.strokeStyle = "rgba(250, 204, 21, 0.4)";
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(FIELD_CONFIG.width / 2, 0);
+      ctx.lineTo(FIELD_CONFIG.width / 2, FIELD_CONFIG.height);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(FIELD_CONFIG.width / 2, FIELD_CONFIG.height / 2, 60, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const goalTop = (FIELD_CONFIG.height - FIELD_CONFIG.goalSize) / 2;
+      
+      ctx.fillStyle = "rgba(250, 204, 21, 0.2)";
+      ctx.fillRect(0, goalTop, 12, FIELD_CONFIG.goalSize);
+      ctx.strokeStyle = "#facc15";
+      ctx.strokeRect(0, goalTop, 12, FIELD_CONFIG.goalSize);
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+      ctx.fillRect(FIELD_CONFIG.width - 12, goalTop, 12, FIELD_CONFIG.goalSize);
+      ctx.strokeStyle = "#ffffff";
+      ctx.strokeRect(FIELD_CONFIG.width - 12, goalTop, 12, FIELD_CONFIG.goalSize);
+
+      if (!ball.hidden) {
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#000000";
+        ctx.stroke();
+      }
+
+      Object.values(players).forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+
+        if (p.team === 'yellow') {
+          ctx.fillStyle = "#facc15";
+          ctx.strokeStyle = "#000000";
+        } else {
+          ctx.fillStyle = "#000000";
+          ctx.strokeStyle = "#facc15";
+        }
+
+        ctx.lineWidth = 3;
+        ctx.fill();
+        ctx.stroke();
+
+        if (p.name && p.name.trim() !== "") {
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 10px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(p.name, p.x, p.y - p.radius - 4);
+        }
+      });
+    }
+
+    window.onload = () => {
+      window.refreshRoomList();
+    };
+  </script>
+</body>
+</html>
