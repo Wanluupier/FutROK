@@ -63,21 +63,52 @@
     .pbtn { font-size: var(--fs-sm); padding: .35em .9em; border-radius: 10px; font-weight: 800; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 
     #joystickBase {
-      position: absolute; left: clamp(48px, 14%, 170px); bottom: 14px; width: 90px; height: 90px; border-radius: 50%;
-      background: rgba(250, 204, 21, 0.15); border: 2px solid rgba(250, 204, 21, 0.6);
+      position: absolute; left: clamp(24px, 8%, 120px); bottom: 12px;
+      width: clamp(60px, 17vmin, 84px); height: clamp(60px, 17vmin, 84px); border-radius: 50%;
+      background: rgba(250, 204, 21, 0.07); border: 2px solid rgba(250, 204, 21, 0.28);
       display: none; z-index: 20; touch-action: none;
     }
+    #joystickBase::before { content: ""; position: absolute; inset: -18px; }  /* área de toque maior que o desenho */
     #joystickStick {
-      position: absolute; width: 36px; height: 36px; border-radius: 50%;
-      background: rgba(250, 204, 21, 0.7); border: 2px solid #facc15; top: 25px; left: 25px; pointer-events: none;
+      position: absolute; width: 40%; height: 40%; top: 30%; left: 30%; border-radius: 50%;
+      background: rgba(250, 204, 21, 0.32); border: 2px solid rgba(250, 204, 21, 0.5); pointer-events: none;
     }
     #touchKickBtn {
-      position: absolute; right: 20px; bottom: 10px; width: 65px; height: 65px; border-radius: 50%;
-      background: rgba(250, 204, 21, 0.3); border: 2px solid #facc15; display: none; align-items: center; justify-content: center;
-      color: #facc15; font-weight: 900; font-size: 10px; z-index: 20; box-shadow: 0 0 12px rgba(250, 204, 21, 0.4); user-select: none;
+      position: absolute; right: clamp(16px, 5%, 90px); bottom: 12px;
+      width: clamp(46px, 13vmin, 62px); height: clamp(46px, 13vmin, 62px); border-radius: 50%;
+      background: rgba(250, 204, 21, 0.10); border: 2px solid rgba(250, 204, 21, 0.32); display: none;
+      align-items: center; justify-content: center; color: rgba(250, 204, 21, 0.6);
+      font-weight: 900; font-size: 9px; z-index: 20; user-select: none; touch-action: none;
     }
+    #touchKickBtn::before { content: ""; position: absolute; inset: -12px; }
+    #touchKickBtn.on { background: rgba(250, 204, 21, 0.35); }
     .drawer { font-size: var(--fs-sm); z-index: 9999 !important; max-height: 460px; }
     #notificationModal { z-index: 999999 !important; }
+
+    /* lobby rolável no celular */
+    #lobbyScreen { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    body { padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)) !important; }
+    #roomCodeFoot { display: none; }
+    .timer, .score, .pbtn { white-space: nowrap; }
+    @media (max-width: 720px) {
+      :root { --fs-sm: 12px; --fs: 14px; --fs-lg: 17px; --fs-score: 22px; --fs-timer: 18px; --bar: 42px; --hdr: 38px; --foot: 30px; }
+      header { justify-content: space-between !important; }
+      header h1 { position: static !important; transform: none !important; font-size: 17px !important; }
+      .hlabel, .btn-label, .tname { display: none !important; }
+      .hbtn { padding: 0 .6em; }
+      .pbtn { padding: .4em .6em; }
+      .card { padding: 10px; border-radius: 14px; }
+      .room-card { padding: 6px 10px; gap: 10px; }
+      #roomCodeDisplay { display: none !important; }
+      #roomCodeFoot { display: inline; }
+      .timer { letter-spacing: .02em; }
+      .score { padding: 0 .1em; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) {
+      #lobbyGrid { grid-template-columns: 1fr 1fr !important; }
+      #lobbyGrid > section { order: 2 !important; }
+      #lobbyGrid > div { order: 1 !important; }
+    }
   </style>
 </head>
 <body class="w-full h-full flex flex-col p-1 overflow-hidden">
@@ -96,15 +127,15 @@
   <header class="relative w-full max-w-[1800px] mx-auto flex items-center justify-end px-2 shrink-0" style="height: var(--hdr)">
     <h1 class="absolute left-1/2 -translate-x-1/2 font-extrabold tracking-wider text-yellow-400 uppercase" style="font-size: calc(var(--fs-lg) * 1.35)">FutROK</h1>
     <div class="flex gap-2 items-center z-30">
-      <button onclick="window.toggleFullScreen()" class="hbtn btn-black">⛶ Tela Cheia</button>
+      <button onclick="window.toggleFullScreen()" class="hbtn btn-black">⛶<span class="hlabel"> Tela Cheia</span></button>
       <button id="btnToggleAudio" onclick="window.toggleAudioSystem()" class="hbtn btn-black">🔊 <span id="audioStatusText">Off</span></button>
       <button id="btnToggleSfx" onclick="window.toggleSfxSystem()" class="hbtn btn-black">⚽ <span id="sfxStatusText">On</span></button>
     </div>
   </header>
 
   <!-- LOBBY -->
-  <div id="lobbyScreen" class="w-full max-w-6xl mx-auto grow min-h-0 overflow-hidden p-2 flex items-center">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start w-full">
+  <div id="lobbyScreen" class="w-full max-w-6xl mx-auto grow min-h-0 p-2 flex">
+    <div id="lobbyGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start w-full my-auto">
 
       <!-- Salas públicas (exatamente 5 salas, sem scroll) -->
       <section class="card order-1 lg:order-2 flex flex-col">
@@ -147,11 +178,11 @@
     <div class="bar w-full bg-zinc-900 border-2 border-yellow-400/40 rounded-t-xl px-2 flex items-center justify-between shrink-0 relative z-30">
       <div class="flex items-center gap-2 grow basis-0 justify-start min-w-0">
         <button onclick="window.toggleChatDrawer()" class="pbtn btn-yellow shadow-md">
-          💬 Chat <span id="chatBadge" class="hidden w-3 h-3 rounded-full bg-red-600 inline-block"></span>
+          💬 <span class="btn-label">Chat</span> <span id="chatBadge" class="hidden w-3 h-3 rounded-full bg-red-600 inline-block"></span>
         </button>
         <div class="flex items-center gap-1.5 ml-auto mr-2">
           <span class="w-3 h-3 rounded-full bg-yellow-400 inline-block border border-black"></span>
-          <span class="team-name text-yellow-400">AMARELO</span>
+          <span class="team-name tname text-yellow-400">AMARELO</span>
           <span id="scoreYellow" class="score">0</span>
         </div>
       </div>
@@ -163,13 +194,13 @@
       <div class="flex items-center gap-2 grow basis-0 justify-end min-w-0">
         <div class="flex items-center gap-1.5 mr-auto ml-2">
           <span id="scoreBlack" class="score">0</span>
-          <span class="team-name text-zinc-300">PRETO</span>
+          <span class="team-name tname text-zinc-300">PRETO</span>
           <span class="w-3 h-3 rounded-full bg-black inline-block border border-yellow-400"></span>
         </div>
         <div id="roomCodeDisplay" class="hidden items-center gap-1 font-mono text-yellow-400 tracking-wider bg-zinc-800 px-2 py-1 rounded-lg border border-yellow-400/40" style="font-size: var(--fs-sm)">
           <span>CÓDIGO:</span><span id="roomCodeText" class="font-bold text-white"></span>
         </div>
-        <button onclick="window.togglePlayersDrawer()" class="pbtn btn-yellow shadow-md">👥 Jogadores</button>
+        <button onclick="window.togglePlayersDrawer()" class="pbtn btn-yellow shadow-md">👥 <span class="btn-label">Jogadores</span></button>
       </div>
     </div>
 
@@ -216,6 +247,7 @@
     <div class="foot w-full bg-zinc-900 border-2 border-yellow-400/40 rounded-b-xl px-3 flex items-center justify-between shrink-0 z-30">
       <span class="text-zinc-300 font-mono flex items-center gap-3 min-w-0" style="font-size: var(--fs-sm)">
         <span id="roomTitleDisplay" class="truncate"></span>
+        <span id="roomCodeFoot" class="text-white font-bold shrink-0"></span>
         <span id="pingDisplay" class="text-yellow-400 font-bold"></span>
       </span>
       <button id="btnLeaveGameAction" onclick="window.leaveRoom()" class="px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold shadow-md" style="font-size: var(--fs-sm); height: 80%">Sair da Sala</button>
@@ -429,7 +461,7 @@
 
     let currentRoom = null, G = null, role = null, busy = false;
     let peer = null, genId = 0, peerErr = null, connectTm = null, watchTm = null;
-    let ctlConn = null, fastConn = null, members = new Map(), sidCounter = 1, hostTick = 0;
+    let ctlConn = null, fastConn = null, members = new Map(), sidCounter = 1, hostTick = 0, watchers = new Set();
 
     const $ = id => document.getElementById(id);
     const canvas = $('gameCanvas'), ctx = canvas.getContext('2d');
@@ -454,7 +486,7 @@
       playMenuMusic();
       window.refreshRoomList();
     }
-    window.forceReturnToMenu = function () { teardown(); showLobby(); };
+    window.forceReturnToMenu = function () { teardown(); showLobby(); startLobbyWatch(); };
 
     window.toggleAudioSystem = function () {
       audioEnabled = !audioEnabled;
@@ -593,7 +625,7 @@
         if (touch.identifier === joystickTouchId) {
           const rect = joystickBase.getBoundingClientRect();
           let dx = touch.clientX - (rect.left + rect.width / 2), dy = touch.clientY - (rect.top + rect.height / 2);
-          const dist = Math.sqrt(dx * dx + dy * dy), maxDist = 30;
+          const dist = Math.sqrt(dx * dx + dy * dy), maxDist = rect.width * 0.3;
           if (dist > maxDist) { dx = (dx / dist) * maxDist; dy = (dy / dist) * maxDist; }
           joystickStick.style.transform = `translate(${dx}px, ${dy}px)`;
           joy.x = dx / maxDist; joy.y = dy / maxDist;
@@ -611,9 +643,9 @@
     window.addEventListener('touchend', resetJoystick);
     window.addEventListener('touchcancel', resetJoystick);
 
-    kickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); kickDown(); });
-    kickBtn.addEventListener('touchend', (e) => { e.preventDefault(); kickUp(); });
-    kickBtn.addEventListener('touchcancel', () => kickUp());
+    kickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); kickBtn.classList.add('on'); kickDown(); });
+    kickBtn.addEventListener('touchend', (e) => { e.preventDefault(); kickBtn.classList.remove('on'); kickUp(); });
+    kickBtn.addEventListener('touchcancel', () => { kickBtn.classList.remove('on'); kickUp(); });
 
     const typing = () => ['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase());
     window.addEventListener('keydown', (e) => {
@@ -649,7 +681,7 @@
        "fast" (não ordenado: entradas e estado do jogo) — assim uma perda de pacote não trava o jogo.
        ========================================================================================== */
     function teardown() {
-      genId++; role = null; inMatch = false; G = null;
+      genId++; role = null; inMatch = false; G = null; stopLobbyWatch(); watchers = new Set();
       clearTimeout(connectTm); clearInterval(watchTm); watchTm = null;
       ctlConn = null; fastConn = null; members = new Map();
       if (peer) { try { peer.destroy(); } catch (e) {} peer = null; }
@@ -777,21 +809,24 @@
       const dc = c.dataChannel; if (dc && dc.bufferedAmount > 32768) return;   // não deixa fila crescer (fila = lag)
       try { c.send(obj); } catch (e) {}
     }
-    function updateCounts() {
-      try {
-        if (currentRoom && currentRoom.type === 'publica' && role === 'host') {
-          const counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}');
-          counts[currentRoom.id] = members.size; localStorage.setItem('futrok_player_counts', JSON.stringify(counts));
-        }
-      } catch (e) {}
+    function updateCounts() {   // avisa quem está olhando o lobby, na hora
+      if (!currentRoom || currentRoom.type !== 'publica' || role !== 'host') return;
+      watchers.forEach(c => { if (c.open) { try { c.send({ ty: 'N', n: members.size }); } catch (e) {} } });
     }
-    function removeMember(sid) {
+    function removeMember(sid, notice) {
       if (!members.has(sid)) return;
+      const mm = members.get(sid);
+      if (notice && mm.ctl && mm.ctl.open) { try { mm.ctl.send({ ty: 'K' }); } catch (e) {} setTimeout(() => { try { mm.ctl.close(); } catch (e) {} }, 300); }
       members.delete(sid); delete G.S.players[sid]; G.rv++;
       syncRoster(); broadcastCtl({ ty: 'R', v: G.rv, list: rosterList() });
       updateCounts(); renderPlayersManagement();
     }
     function hostOnConnection(c, gen) {
+      if (c.label === 'watch') {
+        c.on('open', () => { watchers.add(c); try { c.send({ ty: 'N', n: members.size }); } catch (e) {} });
+        const dw = () => watchers.delete(c); c.on('close', dw); c.on('error', dw);
+        return;
+      }
       if (c.label === 'fast') {
         c.on('open', () => { const m = memberByTok(c.metadata && c.metadata.tok); if (!m) { try { c.close(); } catch (e) {} return; } m.fast = c; });
         c.on('data', d => {
@@ -813,12 +848,14 @@
         const sid = ++sidCounter, tok = Math.random().toString(36).slice(2) + Date.now().toString(36);
         let t0 = 0, t1 = 0; members.forEach(m => { if (m.team === 0) t0++; else t1++; });
         const team = t0 <= t1 ? 0 : 1;
-        members.set(sid, { sid, id: String(d.id || ''), name: String(d.name || '').trim().slice(0, 15), team, ctl: c, fast: null, meta: hostMetaNew(), tok });
+        members.set(sid, { sid, id: String(d.id || ''), name: String(d.name || '').trim().slice(0, 15), team, ctl: c, fast: null, meta: Object.assign(hostMetaNew(), { at: performance.now() }), tok });
         G.S.players[sid] = newPlayer(team); G.rv++;
         syncRoster();
         try { c.send({ ty: 'W', sid, tok, team, rv: G.rv, list: rosterList(), snap: buildSnap(G.S, G.snapN, {}, G.rv), chat: chatMessages }); } catch (e) {}
         broadcastCtl({ ty: 'R', v: G.rv, list: rosterList() });
         updateCounts(); renderPlayersManagement();
+      } else if (d.ty === 'L') {
+        for (const m of [...members.values()]) if (m.ctl === c) { removeMember(m.sid); break; }
       } else if (d.ty === 'C' && d.m && typeof d.m.text === 'string') {
         const m = { sender: String(d.m.sender || 'Anônimo').slice(0, 15), text: d.m.text.slice(0, 1000), from: String(d.m.from || ''), time: String(d.m.time || '').slice(0, 8) };
         pushChat(m); broadcastCtl({ ty: 'C', m });
@@ -860,6 +897,8 @@
         for (const id in G.S.players) { if (+id !== G.mySid && old.players[id] && !old.players[id].kl && G.S.players[id].kl) playKickSound(); }
         const e = G.sentAt[(m.a && m.a[G.mySid]) & 255];
         if (e && m.a && e.s === m.a[G.mySid]) { const rt = G.lastSnAt - e.t; G.rtt = G.rtt ? G.rtt * 0.85 + rt * 0.15 : rt; }
+      } else if (m.ty === 'X') { fatal("Partida encerrada: o Host saiu da sala.");
+      } else if (m.ty === 'K') { fatal("Você foi desconectado da sala por inatividade.");
       } else if (m.ty === 'R') {
         if (m.v <= G.rv) return;
         G.rv = m.v; G.roster = new Map(m.list.map(x => [x.s, { id: x.id, n: x.n, t: x.t }]));
@@ -903,6 +942,7 @@
       const codeDisplayEl = $('roomCodeDisplay');
       if (currentRoom.type === 'privada' && currentRoom.code) { $('roomCodeText').innerText = currentRoom.code; codeDisplayEl.style.display = 'flex'; }
       else codeDisplayEl.style.display = 'none';
+      $('roomCodeFoot').innerText = (currentRoom.type === 'privada' && currentRoom.code) ? 'CÓD ' + currentRoom.code : '';
       $('roomTitleDisplay').innerText = currentRoom.name || "Partida Online";
       $('pingDisplay').innerText = role === 'host' ? 'HOST' : '';
       $('scoreYellow').innerText = "0"; $('scoreBlack').innerText = "0";
@@ -945,6 +985,7 @@
         members.forEach((m, sid) => { ins[sid] = sid === G.mySid ? inp : hostIns(m.meta, now); });
         stepSim(S, ins, true, hostEv);
         hostTick++; broadcastSnap();
+        if (hostTick % 30 === 0) for (const m of [...members.values()]) if (m.sid !== G.mySid && now - m.meta.at > 5000) removeMember(m.sid, true);   // sumiu sem avisar
       } else {
         const s = ++G.seq;
         G.log[s & 255] = { s, x: inp.x, y: inp.y, k: inp.k };
@@ -978,12 +1019,51 @@
       $('victoryModal').classList.remove('hidden');
     }
 
+    function notifyLeave() {
+      try {
+        if (role === 'host') broadcastCtl({ ty: 'X' });
+        else if (ctlConn && ctlConn.open) ctlConn.send({ ty: 'L' });
+      } catch (e) {}
+    }
     window.leaveRoom = function () {
-      if (currentRoom && currentRoom.type === 'publica' && role === 'host') {
-        try { const counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}'); counts[currentRoom.id] = 0; localStorage.setItem('futrok_player_counts', JSON.stringify(counts)); } catch (e) {}
-      }
-      teardown(); showLobby();
+      const g = genId;
+      notifyLeave(); showLobby();
+      setTimeout(() => { if (g === genId) { teardown(); startLobbyWatch(); } }, 200);   // dá tempo do aviso sair
     };
+    window.addEventListener('pagehide', notifyLeave);
+
+    // ---- lobby: contagem de jogadores em tempo real (conexão 'watch' com cada sala pública) ----
+    let watch = null;
+    function setRoomCount(id, n) {
+      if (!watch) return; watch.counts[id] = n;
+      const el = $('rc_' + id); if (el) el.innerText = '⚽ ' + n + '/' + MAX_PLAYERS_PER_ROOM + ' jogadores';
+    }
+    function stopLobbyWatch() {
+      if (!watch) return; const w = watch; watch = null; w.dead = true; clearInterval(w.tm);
+      try { w.peer.destroy(); } catch (e) {}
+    }
+    function startLobbyWatch() {
+      stopLobbyWatch();
+      let p; try { p = new Peer({ config: ICE }); } catch (e) { return; }
+      const w = watch = { dead: false, peer: p, conns: {}, counts: {}, tm: null };
+      PUBLIC_ROOMS.forEach(r => { w.counts[r.id] = 0; });
+      const drop = id => { const c = w.conns[id]; w.conns[id] = null; if (c) { try { c.close(); } catch (e) {} } setRoomCount(id, 0); };
+      const tick = () => {
+        if (w.dead) return;
+        PUBLIC_ROOMS.forEach(r => {
+          if (w.conns[r.id]) return;
+          const c = p.connect(r.id, { label: 'watch', reliable: true, serialization: 'json' });
+          w.conns[r.id] = c;
+          const to = setTimeout(() => { if (w.conns[r.id] === c && !c.open) drop(r.id); }, 7000);
+          c.on('data', m => { if (!w.dead && m && m.ty === 'N') setRoomCount(r.id, m.n | 0); });
+          c.on('close', () => { clearTimeout(to); if (w.conns[r.id] === c) { w.conns[r.id] = null; setRoomCount(r.id, 0); } });
+          c.on('error', () => { clearTimeout(to); if (w.conns[r.id] === c) drop(r.id); });
+        });
+      };
+      p.on('open', () => { if (w.dead) return; tick(); w.tm = setInterval(tick, 2000); });
+      p.on('error', err => { if (w.dead) return; const mt = /futrok_room_pub_\d/.exec((err && err.message) || ''); if (mt && w.conns[mt[0]]) drop(mt[0]); });
+      p.on('disconnected', () => { if (!w.dead && !p.destroyed) { try { p.reconnect(); } catch (e) {} } });
+    }
 
     // ---- desenho ----
     let view = { scale: 1, dpr: 1 };
@@ -1052,9 +1132,7 @@
     }
 
     window.refreshRoomList = function () {
-      const listEl = $('roomList');
-      let counts = {};
-      try { counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}'); } catch (e) {}
+      const listEl = $('roomList'), counts = watch ? watch.counts : {};
       listEl.innerHTML = PUBLIC_ROOMS.map(r => {
         const n = counts[r.id] || 0;
         return `
@@ -1062,7 +1140,7 @@
             <div class="room-badge">${r.num}</div>
             <div class="grow min-w-0">
               <div class="room-name">${r.name}</div>
-              <div class="room-sub">⚽ ${n}/${MAX_PLAYERS_PER_ROOM} jogadores</div>
+              <div class="room-sub" id="rc_${r.id}">⚽ ${n}/${MAX_PLAYERS_PER_ROOM} jogadores</div>
             </div>
             <button onclick="window.joinPublicRoom('${r.id}', '${r.name}')" class="room-go btn-yellow">Entrar</button>
           </div>`;
@@ -1070,7 +1148,7 @@
     };
 
     window.onload = () => {
-      window.refreshRoomList();
+      window.refreshRoomList(); startLobbyWatch();
       if (isTouchDevice) { joystickBase.style.display = 'block'; kickBtn.style.display = 'flex'; }
     };
   </script>
