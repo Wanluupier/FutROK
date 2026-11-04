@@ -2,31 +2,34 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
   <title>FutROK</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
   <style>
     :root {
-      --hdr: 44px; --bar: 48px; --foot: 30px;
+      --hdr: 44px; --bar: 48px; --foot: 0px;
       --fs-sm: 13px; --fs: 15px; --fs-lg: 19px; --fs-score: 26px; --fs-timer: 22px;
     }
     @media (min-height: 640px) and (min-width: 820px) {
-      :root { --hdr: 62px; --bar: 66px; --foot: 40px; --fs-sm: 16px; --fs: 19px; --fs-lg: 26px; --fs-score: 40px; --fs-timer: 34px; }
+      :root { --hdr: 62px; --bar: 66px; --foot: 0px; --fs-sm: 16px; --fs: 19px; --fs-lg: 26px; --fs-score: 40px; --fs-timer: 34px; }
     }
     @media (max-height: 430px) {
-      :root { --hdr: 34px; --bar: 40px; --foot: 26px; --fs-sm: 12px; --fs: 14px; --fs-lg: 17px; --fs-score: 22px; --fs-timer: 19px; }
+      :root { --hdr: 34px; --bar: 40px; --foot: 0px; --fs-sm: 12px; --fs: 14px; --fs-lg: 17px; --fs-score: 22px; --fs-timer: 19px; }
     }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
-    /* Permite rolagem no telemóvel por padrão no corpo do site */
+    /* Permite rolagem livre no telemóvel quando estiver no Lobby */
     html, body {
-      width: 100vw; min-height: 100dvh; margin: 0; padding: 0;
+      width: 100%; min-height: 100dvh; margin: 0; padding: 0;
       background-color: #0d0d0d; color: #facc15;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
 
-    /* Quando estiver a jogar, fixa o ecrã para os controlos funcionarem perfeitamente */
+    /* Trava o ecrã APENAS durante a partida de futebol */
     body.in-game {
       overflow: hidden !important;
       position: fixed; inset: 0;
@@ -94,29 +97,17 @@
     .drawer { font-size: var(--fs-sm); z-index: 9999 !important; max-height: 460px; }
     #notificationModal { z-index: 999999 !important; }
 
-    /* Lobby rolável no telemóvel */
-    #lobbyScreen { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
-    body { padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)) !important; }
+    /* Lobby totalmente rolável no telemóvel */
+    #lobbyScreen { overflow-y: visible !important; touch-action: pan-y !important; -webkit-overflow-scrolling: touch; }
+    body { padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)) !important; }
     #roomCodeFoot { display: none; }
     .timer, .score, .pbtn { white-space: nowrap; }
 
-    /* AJUSTES PARA TELAS PEQUENAS / VERTICAL */
     @media (max-width: 720px) {
-      :root { --fs-sm: 11px; --fs: 13px; --fs-lg: 16px; --fs-score: 20px; --fs-timer: 16px; --bar: 56px; --hdr: 38px; --foot: 30px; }
-      
-      /* Reorganiza o placar para não sobrepor na vertical */
-      .bar { 
-        height: auto !important; 
-        min-height: var(--bar); 
-        padding: 4px 6px !important; 
-        flex-wrap: wrap; 
-        gap: 4px; 
-        justify-content: center !important; 
-      }
-      .bar > div:first-child { order: 1; flex: 1 1 45% !important; justify-content: flex-start !important; }
-      .bar > div.shrink-0 { order: 0; width: 100%; text-align: center; margin-bottom: -2px; }
-      .bar > div:last-child { order: 2; flex: 1 1 45% !important; justify-content: flex-end !important; }
-
+      :root { --fs-sm: 11px; --fs: 13px; --fs-lg: 16px; --fs-score: 20px; --fs-timer: 16px; --bar: 56px; --hdr: 38px; --foot: 0px; }
+      .bar { height: auto !important; min-height: var(--bar); padding: 4px 6px !important; flex-wrap: wrap; gap: 4px; justify-content: center !important; }
+      .bar > div:first-child, .bar > div:last-child { flex: 1 1 40% !important; justify-content: center !important; }
+      .bar > div.shrink-0 { order: -1; width: 100%; text-align: center; margin-bottom: 2px; }
       header { justify-content: space-between !important; }
       header h1 { position: static !important; transform: none !important; font-size: 17px !important; }
       .hlabel, .btn-label, .tname { display: none !important; }
@@ -159,7 +150,7 @@
   </header>
 
   <!-- LOBBY -->
-  <div id="lobbyScreen" class="w-full max-w-6xl mx-auto grow min-h-0 p-2 flex">
+  <div id="lobbyScreen" class="w-full max-w-6xl mx-auto grow p-2 pb-12 flex flex-col">
     <div id="lobbyGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start w-full my-auto">
 
       <section class="card order-1 lg:order-2 flex flex-col">
@@ -273,17 +264,13 @@
     </div>
   </div>
 
-  <footer id="mainFooter" class="text-center text-zinc-400 font-mono tracking-wider shrink-0 flex items-center justify-center font-bold z-30" style="height: var(--foot); font-size: var(--fs-sm)">
-    FutROK v2
-  </footer>
-
   <script>
     try {
       const old = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('futrok_banned_')) old.push(k); }
       old.forEach(k => localStorage.removeItem(k));
     } catch (e) {}
 
-    /* Só cancela o touchmove se estiver estritamente dentro duma partida a correr */
+    /* Só previne o toque padrão quando a partida de futebol estiver a decorrer */
     document.addEventListener('touchmove', function (e) {
       if (document.body.classList.contains('in-game')) {
         if (!e.target.closest('#chatDrawer') && !e.target.closest('#playersDrawer')) {
@@ -490,7 +477,6 @@
       document.body.classList.remove('in-game');
       $('gameScreen').classList.add('hidden');
       $('lobbyScreen').classList.remove('hidden');
-      $('mainFooter').classList.remove('hidden');
       $('victoryModal').classList.add('hidden');
       $('chatDrawer').classList.add('hidden');
       $('playersDrawer').classList.add('hidden');
@@ -922,7 +908,6 @@
     function initGameSession() {
       document.body.classList.add('in-game');
       $('lobbyScreen').classList.add('hidden');
-      $('mainFooter').classList.add('hidden');
       $('gameScreen').classList.remove('hidden');
       $('victoryModal').classList.add('hidden');
       $('chatDrawer').classList.add('hidden');
