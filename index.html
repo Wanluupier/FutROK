@@ -7,324 +7,396 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+    :root {
+      --hdr: 44px; --bar: 48px; --foot: 30px;
+      --fs-sm: 13px; --fs: 15px; --fs-lg: 19px; --fs-score: 26px; --fs-timer: 22px;
     }
+    @media (min-height: 640px) and (min-width: 820px) {
+      :root { --hdr: 62px; --bar: 66px; --foot: 40px; --fs-sm: 16px; --fs: 19px; --fs-lg: 26px; --fs-score: 40px; --fs-timer: 34px; }
+    }
+    @media (max-height: 430px) {
+      :root { --hdr: 34px; --bar: 40px; --foot: 26px; --fs-sm: 12px; --fs: 14px; --fs-lg: 17px; --fs-score: 22px; --fs-timer: 19px; }
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
     html, body {
-      width: 100vw;
-      height: 100dvh;
-      margin: 0;
-      padding: 0;
-      overflow: hidden !important;
-      position: fixed;
-      inset: 0;
-      background-color: #0d0d0d;
-      color: #facc15;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      user-select: none;
-      touch-action: none;
+      width: 100vw; height: 100dvh; margin: 0; padding: 0; overflow: hidden !important;
+      position: fixed; inset: 0; background-color: #0d0d0d; color: #facc15;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; touch-action: none;
     }
-    button, input, select {
-      cursor: pointer;
-      position: relative;
-      z-index: 30;
-      touch-action: auto;
+    button, input, select { cursor: pointer; position: relative; z-index: 30; touch-action: auto; }
+    input { cursor: text; user-select: text; }
+    canvas { background-color: #1a1a1a; border: 0; box-shadow: 0 0 0 2px #facc15, 0 0 14px rgba(250, 204, 21, 0.25); }
+    .btn-yellow { background-color: #facc15; color: #000; font-weight: 800; }
+    .btn-yellow:hover { background-color: #eab308; }
+    .btn-black { background-color: #000; color: #facc15; border: 2px solid #facc15; font-weight: 700; }
+    .input-dark { background-color: #18181b; border: 2px solid #3f3f46; color: #fff; }
+    .input-dark:focus { border-color: #facc15; outline: none; }
+
+    .hbtn { font-size: var(--fs-sm); padding: 0 .8em; height: calc(var(--hdr) - 10px); border-radius: 10px; white-space: nowrap; }
+    .card { background: #18181b; border: 2px solid rgba(250, 204, 21, 0.4); border-radius: 18px; padding: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.45); }
+    .card h2 { font-size: var(--fs-lg); font-weight: 800; color: #facc15; border-bottom: 1px solid #27272a; padding-bottom: 6px; margin-bottom: 10px; }
+    .lbl { display: block; font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .06em; color: #a1a1aa; margin-bottom: 4px; font-weight: 700; }
+    .fld { width: 100%; font-size: max(16px, var(--fs)); padding: .5em .7em; border-radius: 12px; }
+    .big-btn { width: 100%; font-size: var(--fs); padding: .7em .9em; border-radius: 14px; text-transform: uppercase; letter-spacing: .05em; }
+
+    /* 5 salas públicas perfeitamente ajustadas sem precisar de scroll */
+    .room-card {
+      display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 14px;
+      background: linear-gradient(135deg, #1f1f23, #121214); border: 2px solid rgba(250, 204, 21, 0.35);
+      transition: border-color .15s, box-shadow .15s, transform .15s;
     }
-    canvas {
-      background-color: #1a1a1a;
-      border: 2px solid #facc15;
-      box-shadow: 0 0 10px rgba(250, 204, 21, 0.2);
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
+    .room-card:hover { border-color: #facc15; box-shadow: 0 0 14px rgba(250, 204, 21, 0.28); transform: translateY(-1px); }
+    .room-badge {
+      flex: none; width: 2.3em; height: 2.3em; border-radius: 12px; background: #facc15; color: #000;
+      font-weight: 900; font-size: var(--fs); display: flex; align-items: center; justify-content: center;
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,.2);
     }
-    .btn-yellow {
-      background-color: #facc15;
-      color: #000000;
-      font-weight: 700;
-    }
-    .btn-yellow:hover {
-      background-color: #eab308;
-    }
-    .btn-black {
-      background-color: #000000;
-      color: #facc15;
-      border: 2px solid #facc15;
-      font-weight: 700;
-    }
-    .input-dark {
-      background-color: #18181b;
-      border: 1px solid #3f3f46;
-      color: #ffffff;
-    }
-    .input-dark:focus {
-      border-color: #facc15;
-      outline: none;
-    }
+    .room-name { font-size: var(--fs); font-weight: 800; color: #fff; line-height: 1.1; }
+    .room-sub { font-size: var(--fs-sm); color: #a1a1aa; margin-top: 2px; font-weight: 600; }
+    .room-go { flex: none; font-size: var(--fs-sm); padding: .55em 1.2em; border-radius: 10px; text-transform: uppercase; letter-spacing: .06em; }
+
+    .bar { height: var(--bar); }
+    .foot { height: var(--foot); }
+    .team-name { font-size: var(--fs); font-weight: 800; }
+    .score { font-size: var(--fs-score); font-weight: 900; color: #fff; line-height: 1; padding: 0 .25em; }
+    .timer { font-size: var(--fs-timer); font-weight: 900; font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: .08em; }
+    .pbtn { font-size: var(--fs-sm); padding: .35em .9em; border-radius: 10px; font-weight: 800; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+
     #joystickBase {
-      position: absolute;
-      left: 20px;
-      bottom: 10px;
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      background: rgba(250, 204, 21, 0.15);
-      border: 2px solid rgba(250, 204, 21, 0.6);
-      display: none;
-      z-index: 20;
-      touch-action: none;
+      position: absolute; left: clamp(48px, 14%, 170px); bottom: 14px; width: 90px; height: 90px; border-radius: 50%;
+      background: rgba(250, 204, 21, 0.15); border: 2px solid rgba(250, 204, 21, 0.6);
+      display: none; z-index: 20; touch-action: none;
     }
     #joystickStick {
-      position: absolute;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: rgba(250, 204, 21, 0.7);
-      border: 2px solid #facc15;
-      top: 25px;
-      left: 25px;
-      pointer-events: none;
+      position: absolute; width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(250, 204, 21, 0.7); border: 2px solid #facc15; top: 25px; left: 25px; pointer-events: none;
     }
     #touchKickBtn {
-      position: absolute;
-      right: 20px;
-      bottom: 10px;
-      width: 65px;
-      height: 65px;
-      border-radius: 50%;
-      background: rgba(250, 204, 21, 0.3);
-      border: 2px solid #facc15;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      color: #facc15;
-      font-weight: 900;
-      font-size: 10px;
-      z-index: 20;
-      box-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
-      user-select: none;
+      position: absolute; right: 20px; bottom: 10px; width: 65px; height: 65px; border-radius: 50%;
+      background: rgba(250, 204, 21, 0.3); border: 2px solid #facc15; display: none; align-items: center; justify-content: center;
+      color: #facc15; font-weight: 900; font-size: 10px; z-index: 20; box-shadow: 0 0 12px rgba(250, 204, 21, 0.4); user-select: none;
     }
-    #chatDrawer, #playersDrawer {
-      z-index: 9999 !important;
-    }
-    #notificationModal {
-      z-index: 999999 !important;
-    }
+    .drawer { font-size: var(--fs-sm); z-index: 9999 !important; max-height: 460px; }
+    #notificationModal { z-index: 999999 !important; }
   </style>
 </head>
-<body class="w-full h-full flex flex-col justify-between p-1 overflow-hidden">
-
-  <!-- Pop-up de Boas-Vindas -->
-  <div id="welcomeModal" class="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-3">
-    <div class="bg-zinc-900 border-2 border-yellow-400 p-5 rounded-xl text-center max-w-xs shadow-2xl">
-      <h2 class="text-xl md:text-2xl font-extrabold text-yellow-400 mb-1">FutROK Online</h2>
-      <p class="text-xs text-zinc-200 mb-4 font-semibold">Seja bem-vindo ao FutROK! Divirta-se jogando!</p>
-      <button onclick="window.closeWelcomeModal()" class="w-full py-2.5 rounded btn-yellow uppercase font-bold tracking-wider text-xs">
-        Entrar no Jogo
-      </button>
-    </div>
-  </div>
+<body class="w-full h-full flex flex-col p-1 overflow-hidden">
 
   <!-- Modal de Notificação -->
-  <div id="notificationModal" class="hidden fixed inset-0 bg-black/95 flex flex-col items-center justify-center p-3">
-    <div class="bg-zinc-900 border-2 border-yellow-400 p-5 rounded-xl text-center max-w-xs shadow-2xl">
-      <p id="notificationText" class="text-xs md:text-sm font-bold text-white mb-4 tracking-wide"></p>
-      <button onclick="window.closeNotificationModal()" class="w-full py-2 rounded btn-yellow uppercase font-bold tracking-wider text-xs">
-        OK
-      </button>
+  <div id="notificationModal" class="hidden fixed inset-0 bg-black/95 flex flex-col items-center justify-center p-4">
+    <div class="bg-zinc-900 border-2 border-yellow-400 p-6 rounded-2xl text-center max-w-md w-full shadow-2xl">
+      <p id="notificationText" class="font-bold text-white mb-5 tracking-wide" style="font-size: var(--fs-lg)"></p>
+      <button onclick="window.closeNotificationModal()" class="w-full py-3 rounded-xl btn-yellow uppercase tracking-wider" style="font-size: var(--fs)">OK</button>
     </div>
   </div>
 
+  <div id="connectingToast" class="hidden fixed top-3 left-1/2 -translate-x-1/2 bg-zinc-900 border-2 border-yellow-400 text-yellow-400 font-bold rounded-xl px-5 py-2 shadow-2xl" style="z-index: 999998; font-size: var(--fs)">Conectando...</div>
+
   <!-- Header -->
-  <header class="text-center relative w-full max-w-5xl mx-auto flex items-center justify-between px-2 shrink-0 h-[24px] md:h-[38px]">
-    <div></div>
-    <h1 class="text-xs md:text-2xl font-extrabold tracking-wider text-yellow-400 uppercase">FutROK</h1>
-    <div class="flex gap-1 md:gap-2 items-center z-30">
-      <button onclick="window.toggleFullScreen()" class="px-1.5 md:px-2 py-0.2 rounded btn-black text-[8px] md:text-xs">⛶ Tela Cheia</button>
-      <button id="btnToggleAudio" onclick="window.toggleAudioSystem()" class="px-1.5 md:px-2 py-0.2 rounded btn-black text-[8px] md:text-xs">🔊 <span id="audioStatusText">Off</span></button>
-      <button id="btnToggleSfx" onclick="window.toggleSfxSystem()" class="px-1.5 md:px-2 py-0.2 rounded btn-black text-[8px] md:text-xs">⚽ <span id="sfxStatusText">On</span></button>
+  <header class="relative w-full max-w-[1800px] mx-auto flex items-center justify-end px-2 shrink-0" style="height: var(--hdr)">
+    <h1 class="absolute left-1/2 -translate-x-1/2 font-extrabold tracking-wider text-yellow-400 uppercase" style="font-size: calc(var(--fs-lg) * 1.35)">FutROK</h1>
+    <div class="flex gap-2 items-center z-30">
+      <button onclick="window.toggleFullScreen()" class="hbtn btn-black">⛶ Tela Cheia</button>
+      <button id="btnToggleAudio" onclick="window.toggleAudioSystem()" class="hbtn btn-black">🔊 <span id="audioStatusText">Off</span></button>
+      <button id="btnToggleSfx" onclick="window.toggleSfxSystem()" class="hbtn btn-black">⚽ <span id="sfxStatusText">On</span></button>
     </div>
   </header>
 
-  <!-- LOBBY SCREEN -->
-  <div id="lobbyScreen" class="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-2 my-auto overflow-y-auto max-h-[calc(100dvh-50px)] p-1 shrink-0">
-    
-    <!-- Criar Sala Particular -->
-    <div class="bg-zinc-900 border-2 border-yellow-400/40 p-2.5 md:p-4 rounded-xl shadow-lg flex flex-col justify-between">
-      <div>
-        <h2 class="text-xs md:text-sm font-bold mb-1 text-yellow-400 border-b border-zinc-800 pb-1">Criar Sala Particular</h2>
-        <div class="space-y-2 mt-2">
-          <div>
-            <label class="block text-[8px] md:text-[10px] uppercase tracking-wider text-zinc-400">Nome da Sala</label>
-            <input type="text" id="roomNameInput" maxlength="15" placeholder="Nome..." class="w-full p-1 rounded input-dark text-xs">
-          </div>
-          <div>
-            <label class="block text-[8px] md:text-[10px] uppercase tracking-wider text-zinc-400">Seu Nick</label>
-            <input type="text" id="playerNameInput" maxlength="15" placeholder="Nick..." class="w-full p-1 rounded input-dark text-xs">
-          </div>
-        </div>
-      </div>
-      <button id="btnCreateRoomAction" onclick="window.confirmCreateRoom()" class="w-full py-1.5 md:py-2 mt-3 rounded btn-yellow text-center font-bold uppercase tracking-wider text-xs">
-        Criar Sala Particular
-      </button>
-    </div>
+  <!-- LOBBY -->
+  <div id="lobbyScreen" class="w-full max-w-6xl mx-auto grow min-h-0 overflow-hidden p-2 flex items-center">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start w-full">
 
-    <!-- Salas Públicas e Entrar por Código -->
-    <div class="bg-zinc-900 border-2 border-yellow-400/40 p-2.5 md:p-4 rounded-xl shadow-lg flex flex-col justify-between">
-      <div>
-        <div class="flex items-center justify-between border-b border-zinc-800 pb-1 mb-1">
-          <h2 class="text-xs md:text-sm font-bold text-yellow-400">Salas Públicas</h2>
-        </div>
-        <div id="roomList" class="space-y-1 max-h-24 md:max-h-32 overflow-y-auto mb-1 pr-1">
-        </div>
-        <div class="border-t border-zinc-800 pt-1">
-          <h3 class="text-[8px] md:text-[10px] font-bold text-yellow-400 mb-1 uppercase">Entrar em Sala Particular</h3>
-          <div class="flex gap-1.5">
-            <input type="text" id="joinCodeInput" maxlength="3" class="w-20 md:w-28 p-1 rounded input-dark text-xs text-center font-mono tracking-widest" placeholder="000">
-            <button id="btnJoinCodeAction" onclick="window.joinByCode()" class="flex-1 py-1 rounded btn-yellow text-xs font-bold">Entrar por Código</button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <!-- Salas públicas (exatamente 5 salas, sem scroll) -->
+      <section class="card order-1 lg:order-2 flex flex-col">
+        <h2>Salas Públicas</h2>
+        <div id="roomList" class="flex flex-col gap-2"></div>
+      </section>
 
+      <div class="order-2 lg:order-1 flex flex-col gap-4">
+        <section class="card">
+          <h2>Criar Sala Particular</h2>
+          <div class="space-y-3">
+            <div>
+              <label class="lbl">Nome da Sala</label>
+              <input type="text" id="roomNameInput" maxlength="15" placeholder="Nome..." class="fld input-dark">
+            </div>
+            <div>
+              <label class="lbl">Seu Nick</label>
+              <input type="text" id="playerNameInput" maxlength="15" placeholder="Nick..." class="fld input-dark">
+            </div>
+            <button id="btnCreateRoomAction" onclick="window.confirmCreateRoom()" class="big-btn btn-yellow">Criar Sala Particular</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Entrar em Sala Particular</h2>
+          <div class="flex gap-3">
+            <input type="text" id="joinCodeInput" maxlength="3" inputmode="numeric" class="fld input-dark text-center font-mono tracking-widest" style="width: 6.5em; flex: none" placeholder="000">
+            <button id="btnJoinCodeAction" onclick="window.joinByCode()" class="big-btn btn-yellow" style="width: auto; flex: 1">Entrar por Código</button>
+          </div>
+        </section>
+      </div>
+
+    </div>
   </div>
 
   <!-- GAME SCREEN -->
-  <div id="gameScreen" class="hidden w-full max-w-5xl mx-auto flex flex-col items-center relative grow justify-between shrink-0 my-auto overflow-hidden h-[calc(100dvh-55px)]">
-    
-    <!-- Placar Exato com Relógio Centralizado como Eixo -->
-    <div class="w-full bg-zinc-900 border-2 border-yellow-400/40 rounded-t-lg px-2 py-0.2 flex items-center justify-between shrink-0 h-[26px] md:h-[32px] relative z-30">
-      
-      <!-- Esquerda: Chat + Time Amarelo alinhado até o centro exato -->
-      <div class="flex items-center gap-2 grow basis-0 justify-start">
-        <button onclick="window.toggleChatDrawer()" class="px-2 py-0.5 rounded btn-yellow text-[9px] md:text-xs font-extrabold flex items-center gap-1 shadow-md">
-          💬 Chat <span id="chatBadge" class="hidden w-2 h-2 rounded-full bg-red-600 inline-block"></span>
-        </button>
+  <div id="gameScreen" class="hidden w-full max-w-[1800px] mx-auto flex flex-col grow min-h-0 relative">
 
-        <div class="flex items-center gap-1 ml-auto mr-3">
-          <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block border border-black"></span>
-          <span class="font-bold text-yellow-400 text-[8px] md:text-xs">AMARELO</span>
-          <span id="scoreYellow" class="text-xs md:text-sm font-black text-white px-1">0</span>
+    <!-- Placar -->
+    <div class="bar w-full bg-zinc-900 border-2 border-yellow-400/40 rounded-t-xl px-2 flex items-center justify-between shrink-0 relative z-30">
+      <div class="flex items-center gap-2 grow basis-0 justify-start min-w-0">
+        <button onclick="window.toggleChatDrawer()" class="pbtn btn-yellow shadow-md">
+          💬 Chat <span id="chatBadge" class="hidden w-3 h-3 rounded-full bg-red-600 inline-block"></span>
+        </button>
+        <div class="flex items-center gap-1.5 ml-auto mr-2">
+          <span class="w-3 h-3 rounded-full bg-yellow-400 inline-block border border-black"></span>
+          <span class="team-name text-yellow-400">AMARELO</span>
+          <span id="scoreYellow" class="score">0</span>
         </div>
       </div>
 
-      <!-- Centro Perfeito: O Relógio (Os dois pontos ":" guiam o eixo central do campo) -->
       <div class="shrink-0 px-2 text-center">
-        <span id="gameTimer" class="text-[9px] md:text-xs font-black font-mono text-yellow-400 tracking-widest leading-none">05:00</span>
+        <span id="gameTimer" class="timer text-yellow-400 leading-none">05:00</span>
       </div>
 
-      <!-- Direita: Time Preto + Código da Sala + Botão Jogadores -->
-      <div class="flex items-center gap-2 grow basis-0 justify-end">
-        <div class="flex items-center gap-1 mr-auto ml-3">
-          <span id="scoreBlack" class="text-xs md:text-sm font-black text-white px-1">0</span>
-          <span class="font-bold text-zinc-300 text-[8px] md:text-xs">PRETO</span>
-          <span class="w-2 h-2 rounded-full bg-black inline-block border border-yellow-400"></span>
+      <div class="flex items-center gap-2 grow basis-0 justify-end min-w-0">
+        <div class="flex items-center gap-1.5 mr-auto ml-2">
+          <span id="scoreBlack" class="score">0</span>
+          <span class="team-name text-zinc-300">PRETO</span>
+          <span class="w-3 h-3 rounded-full bg-black inline-block border border-yellow-400"></span>
         </div>
-
-        <!-- Código da Sala (Mantido no canto direito como você gostou) -->
-        <div id="roomCodeDisplay" class="hidden items-center gap-1 font-mono text-yellow-400 text-[9px] md:text-xs tracking-wider bg-zinc-800 px-1.5 py-0.5 rounded border border-yellow-400/40 mr-1">
-          <span>CÓDIGO:</span>
-          <span id="roomCodeText" class="font-bold text-white"></span>
+        <div id="roomCodeDisplay" class="hidden items-center gap-1 font-mono text-yellow-400 tracking-wider bg-zinc-800 px-2 py-1 rounded-lg border border-yellow-400/40" style="font-size: var(--fs-sm)">
+          <span>CÓDIGO:</span><span id="roomCodeText" class="font-bold text-white"></span>
         </div>
-
-        <button onclick="window.togglePlayersDrawer()" class="px-2 py-0.5 rounded btn-yellow text-[9px] md:text-xs font-extrabold flex items-center gap-1 shadow-md">
-          👥 Jogadores
-        </button>
+        <button onclick="window.togglePlayersDrawer()" class="pbtn btn-yellow shadow-md">👥 Jogadores</button>
       </div>
-
     </div>
 
     <!-- Campo -->
-    <div id="canvasContainer" class="relative w-full flex justify-center bg-zinc-950 border-x-2 border-yellow-400/40 grow items-center overflow-hidden my-0">
+    <div id="canvasContainer" class="relative w-full flex justify-center bg-zinc-950 border-x-2 border-yellow-400/40 grow min-h-0 items-center overflow-hidden">
       <canvas id="gameCanvas"></canvas>
 
-      <div id="joystickBase">
-        <div id="joystickStick"></div>
-      </div>
-
+      <div id="joystickBase"><div id="joystickStick"></div></div>
       <div id="touchKickBtn">CHUTAR</div>
 
       <!-- CHAT -->
-      <div id="chatDrawer" class="hidden absolute top-2 left-2 md:top-2 md:left-2 bottom-20 md:bottom-auto w-72 md:w-80 h-56 md:h-64 bg-zinc-900 border-2 border-yellow-400 rounded-xl shadow-2xl flex flex-col p-2">
-        <div class="flex items-center justify-between border-b border-zinc-700 pb-1 mb-1 shrink-0">
-          <span class="text-xs font-bold text-yellow-400 uppercase tracking-wider">Chat da Partida</span>
-          <button onclick="window.toggleChatDrawer()" class="text-zinc-400 hover:text-white font-bold text-xs px-1.5 py-0.5 bg-zinc-800 rounded">✕</button>
+      <div id="chatDrawer" class="drawer hidden absolute top-2 left-2 bottom-2 w-[min(92%,400px)] bg-zinc-900 border-2 border-yellow-400 rounded-xl shadow-2xl flex flex-col p-3">
+        <div class="flex items-center justify-between border-b border-zinc-700 pb-2 mb-2 shrink-0">
+          <span class="font-bold text-yellow-400 uppercase tracking-wider" style="font-size: var(--fs)">Chat da Partida</span>
+          <button onclick="window.toggleChatDrawer()" class="text-zinc-300 hover:text-white font-bold px-2.5 py-1 bg-zinc-800 rounded-lg" style="font-size: var(--fs-sm)">✕</button>
         </div>
-        
-        <div id="chatMessagesList" class="grow overflow-y-auto space-y-1 pr-1 text-[11px] text-zinc-200 font-sans mb-1.5">
-          <div class="text-zinc-500 italic text-[10px] text-center">Nenhuma mensagem ainda...</div>
+        <div id="chatMessagesList" class="grow overflow-y-auto space-y-1 pr-1 text-zinc-200 font-sans mb-2">
+          <div class="text-zinc-500 italic text-center">Nenhuma mensagem ainda...</div>
         </div>
-
-        <div class="flex gap-1 shrink-0">
-          <input type="text" id="chatInput" maxlength="1000" placeholder="Digite sua mensagem..." class="flex-1 p-1 rounded input-dark text-xs" onkeydown="if(event.key==='Enter') window.sendChatMessage()">
-          <button onclick="window.sendChatMessage()" class="px-2.5 py-1 rounded btn-yellow text-xs font-bold">Enviar</button>
+        <div class="flex gap-2 shrink-0">
+          <input type="text" id="chatInput" maxlength="1000" placeholder="Digite sua mensagem..." class="flex-1 min-w-0 px-3 py-2 rounded-lg input-dark" style="font-size: max(16px, var(--fs-sm))" onkeydown="if(event.key==='Enter') window.sendChatMessage()">
+          <button onclick="window.sendChatMessage()" class="px-4 py-2 rounded-lg btn-yellow font-bold" style="font-size: var(--fs-sm)">Enviar</button>
         </div>
       </div>
 
-      <!-- JOGADORES NA SALA -->
-      <div id="playersDrawer" class="hidden absolute top-2 right-2 md:top-2 md:right-2 bottom-20 md:bottom-auto w-72 md:w-80 h-56 md:h-64 bg-zinc-900 border-2 border-yellow-400 rounded-xl shadow-2xl flex flex-col p-2">
-        <div class="flex items-center justify-between border-b border-zinc-700 pb-1 mb-1 shrink-0">
-          <span class="text-xs font-bold text-yellow-400 uppercase tracking-wider">Jogadores na Sala</span>
-          <button onclick="window.togglePlayersDrawer()" class="text-zinc-400 hover:text-white font-bold text-xs px-1.5 py-0.5 bg-zinc-800 rounded">✕</button>
+      <!-- JOGADORES -->
+      <div id="playersDrawer" class="drawer hidden absolute top-2 right-2 bottom-2 w-[min(92%,400px)] bg-zinc-900 border-2 border-yellow-400 rounded-xl shadow-2xl flex flex-col p-3">
+        <div class="flex items-center justify-between border-b border-zinc-700 pb-2 mb-2 shrink-0">
+          <span class="font-bold text-yellow-400 uppercase tracking-wider" style="font-size: var(--fs)">Jogadores na Sala</span>
+          <button onclick="window.togglePlayersDrawer()" class="text-zinc-300 hover:text-white font-bold px-2.5 py-1 bg-zinc-800 rounded-lg" style="font-size: var(--fs-sm)">✕</button>
         </div>
-        
-        <div id="playersManagementList" class="grow overflow-y-auto space-y-1.5 pr-1 text-[11px] text-zinc-200 font-sans mb-1.5">
-        </div>
+        <div id="playersManagementList" class="grow overflow-y-auto space-y-2 pr-1 text-zinc-200 font-sans"></div>
       </div>
 
       <div id="victoryModal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center z-40">
-        <div class="bg-zinc-900 border-2 border-yellow-400 p-3 rounded-xl text-center max-w-xs shadow-2xl">
-          <p id="victoryMessage" class="text-xs font-black tracking-wide mb-2 uppercase"></p>
-          <button id="btnVictoryExitAction" onclick="window.leaveRoom()" class="w-full py-1.5 rounded btn-yellow uppercase font-bold tracking-wider text-[10px]">
-            Voltar ao Menu
-          </button>
+        <div class="bg-zinc-900 border-2 border-yellow-400 p-5 rounded-2xl text-center max-w-md shadow-2xl">
+          <p id="victoryMessage" class="font-black tracking-wide mb-4 uppercase" style="font-size: var(--fs-lg)"></p>
+          <button id="btnVictoryExitAction" onclick="window.leaveRoom()" class="w-full py-3 rounded-xl btn-yellow uppercase tracking-wider" style="font-size: var(--fs)">Voltar ao Menu</button>
         </div>
       </div>
     </div>
 
-    <!-- Rodapé da Partida -->
-    <div class="w-full bg-zinc-900 border-2 border-yellow-400/40 rounded-b-lg px-2 py-0.2 flex items-center justify-between text-[8px] shrink-0 h-[18px] md:h-[22px] z-30">
-      <span id="roomTitleDisplay" class="text-[7px] text-zinc-400 font-mono"></span>
-      <button id="btnLeaveGameAction" onclick="window.leaveRoom()" class="px-2 py-0.1 rounded bg-red-600 hover:bg-red-700 text-white font-bold text-[7px] md:text-[9px] shadow-md">
-        Sair da Sala
-      </button>
+    <!-- Rodapé da partida -->
+    <div class="foot w-full bg-zinc-900 border-2 border-yellow-400/40 rounded-b-xl px-3 flex items-center justify-between shrink-0 z-30">
+      <span class="text-zinc-300 font-mono flex items-center gap-3 min-w-0" style="font-size: var(--fs-sm)">
+        <span id="roomTitleDisplay" class="truncate"></span>
+        <span id="pingDisplay" class="text-yellow-400 font-bold"></span>
+      </span>
+      <button id="btnLeaveGameAction" onclick="window.leaveRoom()" class="px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold shadow-md" style="font-size: var(--fs-sm); height: 80%">Sair da Sala</button>
     </div>
-
-    <div class="w-full text-center text-[8px] md:text-[10px] text-zinc-400 font-mono tracking-wider shrink-0 h-[14px] flex items-center justify-center font-bold z-30">
-      Criado por Wanluupier
-    </div>
-
   </div>
 
-  <!-- Footer -->
-  <footer id="mainFooter" class="text-center text-[8px] md:text-[10px] text-zinc-400 font-mono tracking-wider shrink-0 h-[14px] flex items-center justify-center font-bold z-30">
-    Criado por Wanluupier
+  <!-- Footer do lobby -->
+  <footer id="mainFooter" class="text-center text-zinc-400 font-mono tracking-wider shrink-0 flex items-center justify-center font-bold z-30" style="height: var(--foot); font-size: var(--fs-sm)">
   </footer>
 
   <script>
     try {
-      for (let key in localStorage) {
-        if (key.startsWith('futrok_banned_')) {
-          localStorage.removeItem(key);
-        }
-      }
-    } catch(e){}
+      const old = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('futrok_banned_')) old.push(k); }
+      old.forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
 
-    document.addEventListener('touchmove', function(e) {
-      if (!e.target.closest('#roomList') && !e.target.closest('#chatDrawer') && !e.target.closest('#playersDrawer')) {
-        e.preventDefault();
-      }
+    document.addEventListener('touchmove', function (e) {
+      if (!e.target.closest('#lobbyScreen') && !e.target.closest('#chatDrawer') && !e.target.closest('#playersDrawer')) e.preventDefault();
     }, { passive: false });
 
-    let peer = null;
-    let conn = null;
-    let connections = [];
-    let isHost = false;
-    let intentionalLeave = false;
-    let isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    /* ==========================================================================================
+       NÚCLEO (física + sincronização). Sem DOM: roda igual no host e no cliente.
+       Física no estilo HaxBall: passo fixo de 60 Hz, colisão de discos com massa/elasticidade.
+       ========================================================================================== */
+    /* CORE-START */
+    const FIELD = { w: 800, h: 460, goal: 110 };
+    const PH = { r: 16, accel: 0.1, damp: 0.96, inv: 0.5, bc: 0.5, kick: 5, range: 5 };   // jogador
+    const BL = { r: 10, damp: 0.99, inv: 1, bc: 0.5, wall: 0.6 };                          // bola
+    const STEP = 1000 / 60;
+    const MAX_SCORE = 10, MATCH_SECS = 300, GOAL_PAUSE = 72;   // 72 ticks = 1,2 s
+    const ZERO_IN = { x: 0, y: 0, k: 0 };
+    const r2 = v => Math.round(v * 100) / 100;
 
+    function newState() {
+      return { players: {}, ball: { x: FIELD.w / 2, y: FIELD.h / 2, vx: 0, vy: 0, hid: 0 }, score: [0, 0], timeLeft: MATCH_SECS, over: 0, secT: 0, resetIn: 0 };
+    }
+    function newPlayer(team) {
+      return { x: team === 0 ? FIELD.w * 0.25 : FIELD.w * 0.75, y: FIELD.h / 2, vx: 0, vy: 0, ix: 0, iy: 0, kl: 0 };
+    }
+    function finishState(S) { S.over = S.score[0] > S.score[1] ? 1 : (S.score[1] > S.score[0] ? 2 : 3); }
+
+    // colisão entre dois discos (a, b) estilo HaxBall: separa pela massa e aplica impulso com elasticidade ca*cb
+    function collide(a, ra, ia, ca, b, rb, ib, cb) {
+      let dx = b.x - a.x, dy = b.y - a.y;
+      const rs = ra + rb, d2 = dx * dx + dy * dy;
+      if (d2 > rs * rs) return 0;
+      const d = Math.sqrt(d2);
+      const nx = d > 0 ? dx / d : 1, ny = d > 0 ? dy / d : 0;
+      const mf = ia / (ia + ib), pen = rs - d;
+      a.x -= nx * pen * mf; a.y -= ny * pen * mf;
+      b.x += nx * pen * (1 - mf); b.y += ny * pen * (1 - mf);
+      const rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+      if (rv < 0) {
+        const j = rv * (ca * cb + 1);
+        a.vx += nx * j * mf; a.vy += ny * j * mf;
+        b.vx -= nx * j * (1 - mf); b.vy -= ny * j * (1 - mf);
+        return -rv;
+      }
+      return 0;
+    }
+
+    function stepSim(S, ins, auth, ev) {
+      if (S.over) return;
+      const B = S.ball, ids = Object.keys(S.players), P = ids.map(id => S.players[id]);
+      const gt = (FIELD.h - FIELD.goal) / 2, gb = gt + FIELD.goal;
+
+      for (let i = 0; i < P.length; i++) {
+        const p = P[i], inp = ins[ids[i]] || ZERO_IN;
+        let x = +inp.x || 0, y = +inp.y || 0;
+        const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; }
+        p.ix = x; p.iy = y;
+        p.vx += x * PH.accel; p.vy += y * PH.accel;
+        if (!inp.k) p.kl = 0;
+        else if (!p.kl && !B.hid) {
+          const dx = B.x - p.x, dy = B.y - p.y, d = Math.hypot(dx, dy);
+          if (d <= PH.r + BL.r + PH.range) {
+            const nx = d > 0 ? dx / d : 1, ny = d > 0 ? dy / d : 0;
+            B.vx += nx * PH.kick * BL.inv; B.vy += ny * PH.kick * BL.inv;
+            p.kl = 1;
+            if (ev && ev.kick) ev.kick(ids[i]);
+          }
+        }
+      }
+      for (const p of P) { p.x += p.vx; p.y += p.vy; p.vx *= PH.damp; p.vy *= PH.damp; }
+      if (!B.hid) { B.x += B.vx; B.y += B.vy; B.vx *= BL.damp; B.vy *= BL.damp; }
+
+      for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) collide(P[i], PH.r, PH.inv, PH.bc, P[j], PH.r, PH.inv, PH.bc);
+      if (!B.hid) for (const p of P) collide(p, PH.r, PH.inv, PH.bc, B, BL.r, BL.inv, BL.bc);
+
+      for (const p of P) {
+        if (p.x < PH.r) { p.x = PH.r; if (p.vx < 0) p.vx = 0; }
+        if (p.x > FIELD.w - PH.r) { p.x = FIELD.w - PH.r; if (p.vx > 0) p.vx = 0; }
+        if (p.y < PH.r) { p.y = PH.r; if (p.vy < 0) p.vy = 0; }
+        if (p.y > FIELD.h - PH.r) { p.y = FIELD.h - PH.r; if (p.vy > 0) p.vy = 0; }
+      }
+
+      if (!B.hid) {
+        let goalFor = -1;
+        if (B.y - BL.r < 0) { B.y = BL.r; if (B.vy < 0) { if (ev && ev.bounce) ev.bounce(-B.vy); B.vy *= -BL.wall; } }
+        if (B.y + BL.r > FIELD.h) { B.y = FIELD.h - BL.r; if (B.vy > 0) { if (ev && ev.bounce) ev.bounce(B.vy); B.vy *= -BL.wall; } }
+        if (B.x - BL.r < 0) {
+          if (B.y > gt && B.y < gb) goalFor = 1;
+          else { B.x = BL.r; if (B.vx < 0) { if (ev && ev.bounce) ev.bounce(-B.vx); B.vx *= -BL.wall; } }
+        }
+        if (B.x + BL.r > FIELD.w) {
+          if (B.y > gt && B.y < gb) goalFor = 0;
+          else { B.x = FIELD.w - BL.r; if (B.vx > 0) { if (ev && ev.bounce) ev.bounce(B.vx); B.vx *= -BL.wall; } }
+        }
+        if (goalFor >= 0) {
+          B.hid = 1; B.vx = 0; B.vy = 0;
+          if (auth) {
+            S.score[goalFor]++; S.resetIn = GOAL_PAUSE;
+            if (ev && ev.goal) ev.goal(goalFor);
+            if (S.score[goalFor] >= MAX_SCORE) finishState(S);
+          }
+        }
+      }
+
+      if (auth && !S.over) {
+        if (B.hid && S.resetIn > 0 && --S.resetIn === 0) { B.x = FIELD.w / 2; B.y = FIELD.h / 2; B.vx = 0; B.vy = 0; B.hid = 0; }
+        if (++S.secT >= 60) { S.secT = 0; if (--S.timeLeft <= 0) { S.timeLeft = 0; finishState(S); } }
+      }
+    }
+
+    // ---- host: entradas dos clientes ----
+    function hostMetaNew() { return { x: 0, y: 0, k: 0, seq: 0, kn: 0, pulse: 0, at: 0 }; }
+    const clamp1 = v => { v = +v; return isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0; };
+    function hostOnInput(meta, m, now) {
+      if (typeof m.s !== 'number') return;
+      if (m.s > meta.seq) { meta.seq = m.s; meta.x = clamp1(m.x); meta.y = clamp1(m.y); meta.k = m.k ? 1 : 0; meta.at = now; }
+      if (typeof m.kn === 'number' && m.kn > meta.kn) { meta.kn = m.kn; meta.pulse = 4; }
+    }
+    function hostIns(meta, now) {
+      if (now - meta.at > 400) return ZERO_IN;           // cliente travou/sumiu: para de andar
+      const k = (meta.k || meta.pulse > 0) ? 1 : 0;
+      if (meta.pulse > 0) meta.pulse--;
+      return { x: meta.x, y: meta.y, k };
+    }
+    function buildSnap(S, n, acks, rv) {
+      const B = S.ball, p = [];
+      for (const id in S.players) { const q = S.players[id]; p.push([+id, r2(q.x), r2(q.y), r2(q.vx), r2(q.vy), r2(q.ix), r2(q.iy), q.kl]); }
+      return { ty: 'S', n, tl: S.timeLeft, o: S.over, sc: S.score, h: B.hid, b: [r2(B.x), r2(B.y), r2(B.vx), r2(B.vy)], p, a: acks, rv };
+    }
+
+    // ---- cliente: estado vindo do host + repetição das entradas locais ainda não confirmadas (predição) ----
+    function stateFromSnap(sn) {
+      const S = newState();
+      S.score = sn.sc.slice(); S.timeLeft = sn.tl; S.over = sn.o;
+      S.ball = { x: sn.b[0], y: sn.b[1], vx: sn.b[2], vy: sn.b[3], hid: sn.h ? 1 : 0 };
+      for (const q of sn.p) S.players[q[0]] = { x: q[1], y: q[2], vx: q[3], vy: q[4], ix: q[5], iy: q[6], kl: q[7] ? 1 : 0 };
+      return S;
+    }
+    // devolve o novo estado "de agora" do cliente e atualiza os deslocamentos de suavização
+    function reconcile(G, sn) {
+      const old = G.S, S2 = stateFromSnap(sn);
+      const ack = (sn.a && sn.a[G.mySid]) || 0;
+      const from = Math.max(ack + 1, G.seq - 120 + 1);
+      for (let s = from; s <= G.seq; s++) {
+        const ins = {}, e = G.log[s & 255];
+        for (const id in S2.players) {
+          const q = S2.players[id];
+          ins[id] = (+id === G.mySid) ? ((e && e.s === s) ? e : ZERO_IN) : { x: q.ix, y: q.iy, k: 0 };
+        }
+        stepSim(S2, ins, false, null);
+      }
+      const bump = (key, ox, oy, nx, ny) => {
+        const o = G.off[key] || (G.off[key] = [0, 0]);
+        o[0] += ox - nx; o[1] += oy - ny;
+        if (Math.hypot(o[0], o[1]) > 80) { o[0] = 0; o[1] = 0; }
+      };
+      if (!old.ball.hid && !S2.ball.hid) bump('b', old.ball.x, old.ball.y, S2.ball.x, S2.ball.y); else delete G.off.b;
+      for (const id in S2.players) { const q = old.players[id]; if (q) bump(id, q.x, q.y, S2.players[id].x, S2.players[id].y); }
+      G.S = S2;
+      return old;
+    }
+    /* CORE-END */
+
+    /* ==========================================================================================
+       ESTADO GERAL / ÁUDIO / UI
+       ========================================================================================== */
+    let isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     let chatMessages = [];
     let myPlayerName = "";
 
@@ -333,1123 +405,673 @@
       myPersistentClientId = 'c_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
       localStorage.setItem('futrok_client_id', myPersistentClientId);
     }
+    const localPlayerId = myPersistentClientId;
 
     const menuAudio = new Audio('https://file.garden/auM94U70ENQrkExn/menu.mp3');
-    menuAudio.loop = true;
-    menuAudio.volume = 0.35;
-
+    menuAudio.loop = true; menuAudio.volume = 0.35;
     const matchAudio = new Audio('https://file.garden/auM94U70ENQrkExn/jogo.mp3');
-    matchAudio.loop = true;
-    matchAudio.volume = 0.12;
+    matchAudio.loop = true; matchAudio.volume = 0.12;
 
-    let audioEnabled = false;
+    let audioEnabled = false;   // o jogo começa em silêncio
     let sfxEnabled = true;
+    let inMatch = false;        // sons de efeito só existem dentro de uma partida (nunca no menu)
 
+    // Exatamente 5 salas públicas com os nomes pedidos
     const PUBLIC_ROOMS = [
-      { id: 'futrok_room_pub_1N', name: '1N' },
-      { id: 'futrok_room_pub_2A', name: '2A' },
-      { id: 'futrok_room_pub_3M', name: '3M' },
-      { id: 'futrok_room_pub_4E', name: '4E' },
-      { id: 'futrok_room_pub_5V', name: '5V' },
-      { id: 'futrok_room_pub_6A', name: '6A' },
-      { id: 'futrok_room_pub_7M', name: '7M' },
-      { id: 'futrok_room_pub_8A', name: '8A' }
+      { id: 'futrok_room_pub_1', name: 'Sala 1', num: '1' },
+      { id: 'futrok_room_pub_2', name: 'Sala 2', num: '2' },
+      { id: 'futrok_room_pub_3', name: 'Sala 3', num: '3' },
+      { id: 'futrok_room_pub_4', name: 'Sala 4', num: '4' },
+      { id: 'futrok_room_pub_5', name: 'Sala 5', num: '5' }
     ];
+    const MAX_PLAYERS_PER_ROOM = 4;
+    const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
 
-    window.showNotification = function(message) {
-      document.getElementById('notificationText').innerText = message;
-      document.getElementById('notificationModal').classList.remove('hidden');
+    let currentRoom = null, G = null, role = null, busy = false;
+    let peer = null, genId = 0, peerErr = null, connectTm = null, watchTm = null;
+    let ctlConn = null, fastConn = null, members = new Map(), sidCounter = 1, hostTick = 0;
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('gameCanvas'), ctx = canvas.getContext('2d');
+
+    window.showNotification = function (message) {
+      $('notificationText').innerText = message;
+      $('notificationModal').classList.remove('hidden');
     };
-
-    window.closeNotificationModal = function() {
-      document.getElementById('notificationModal').classList.add('hidden');
+    window.closeNotificationModal = function () {
+      $('notificationModal').classList.add('hidden');
       window.forceReturnToMenu();
     };
+    function setBusy(v) { busy = v; $('connectingToast').classList.toggle('hidden', !v); }
 
-    window.forceReturnToMenu = function() {
-      intentionalLeave = true;
-      if (conn) { try { conn.close(); } catch(e){} conn = null; }
-      connections.forEach(c => { try { c.close(); } catch(e){} });
-      connections = [];
-      if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
-
-      currentRoom = null;
-      isHost = false;
-      players = {};
-      chatMessages = [];
-
+    function showLobby() {
+      $('gameScreen').classList.add('hidden');
+      $('lobbyScreen').classList.remove('hidden');
+      $('mainFooter').classList.remove('hidden');
+      $('victoryModal').classList.add('hidden');
+      $('chatDrawer').classList.add('hidden');
+      $('playersDrawer').classList.add('hidden');
       playMenuMusic();
-
-      document.getElementById('gameScreen').classList.add('hidden');
-      document.getElementById('lobbyScreen').classList.remove('hidden');
-      document.getElementById('mainFooter').classList.remove('hidden');
-      document.getElementById('victoryModal').classList.add('hidden');
-      document.getElementById('chatDrawer').classList.add('hidden');
-      document.getElementById('playersDrawer').classList.add('hidden');
       window.refreshRoomList();
-    };
+    }
+    window.forceReturnToMenu = function () { teardown(); showLobby(); };
 
-    window.closeWelcomeModal = function() {
-      audioEnabled = true;
-      document.getElementById('audioStatusText').innerText = "On";
-      initAudio();
-      playMenuMusic();
-
-      document.getElementById('welcomeModal').style.display = 'none';
-
-      if (isTouchDevice) {
-        document.getElementById('joystickBase').style.display = 'block';
-        document.getElementById('touchKickBtn').style.display = 'flex';
-      }
-    };
-
-    window.toggleAudioSystem = function() {
+    window.toggleAudioSystem = function () {
       audioEnabled = !audioEnabled;
-      document.getElementById('audioStatusText').innerText = audioEnabled ? "On" : "Off";
+      $('audioStatusText').innerText = audioEnabled ? "On" : "Off";
       if (audioEnabled) {
         initAudio();
-        if (currentRoom) playMatchMusic();
-        else playMenuMusic();
+        // "destrava" a outra música (iOS só deixa tocar depois de um toque do usuário)
+        const other = G ? menuAudio : matchAudio;
+        other.muted = true;
+        other.play().then(() => { other.pause(); other.currentTime = 0; other.muted = false; }).catch(() => { other.muted = false; });
+        if (inMatch) playMatchMusic(); else playMenuMusic();
       } else {
-        menuAudio.pause();
-        matchAudio.pause();
+        menuAudio.pause(); matchAudio.pause();
       }
     };
-
-    window.toggleSfxSystem = function() {
+    window.toggleSfxSystem = function () {
       sfxEnabled = !sfxEnabled;
-      document.getElementById('sfxStatusText').innerText = sfxEnabled ? "On" : "Off";
+      $('sfxStatusText').innerText = sfxEnabled ? "On" : "Off";
     };
-
-    window.toggleFullScreen = function() {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {});
-      } else {
-        if (document.exitFullscreen) document.exitFullscreen();
-      }
+    window.toggleFullScreen = function () {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+      else if (document.exitFullscreen) document.exitFullscreen();
     };
-
-    window.toggleChatDrawer = function() {
-      const drawer = document.getElementById('chatDrawer');
+    window.toggleChatDrawer = function () {
+      const drawer = $('chatDrawer');
       drawer.classList.toggle('hidden');
       if (!drawer.classList.contains('hidden')) {
-        document.getElementById('chatBadge').classList.add('hidden');
-        const listEl = document.getElementById('chatMessagesList');
-        listEl.scrollTop = listEl.scrollHeight;
+        $('chatBadge').classList.add('hidden');
+        const listEl = $('chatMessagesList'); listEl.scrollTop = listEl.scrollHeight;
       }
     };
-
-    window.togglePlayersDrawer = function() {
-      const drawer = document.getElementById('playersDrawer');
+    window.togglePlayersDrawer = function () {
+      const drawer = $('playersDrawer');
       drawer.classList.toggle('hidden');
-      if (!drawer.classList.contains('hidden')) {
-        renderPlayersManagement();
-      }
+      if (!drawer.classList.contains('hidden')) renderPlayersManagement();
     };
-
-    window.sendChatMessage = function() {
-      const input = document.getElementById('chatInput');
-      const text = input.value.trim();
-      if (!text) return;
-
-      const msgObj = {
-        sender: myPlayerName !== "" ? myPlayerName : "Anônimo",
-        text: text,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-
-      chatMessages.push(msgObj);
-      input.value = "";
-      renderChatMessages();
-
-      if (isHost) {
-        broadcastChatState();
-      } else if (conn && conn.open) {
-        conn.send({ type: 'CHAT_MESSAGE', message: msgObj });
-      }
-    };
-
-    function renderChatMessages() {
-      const listEl = document.getElementById('chatMessagesList');
-      if (chatMessages.length === 0) {
-        listEl.innerHTML = `<div class="text-zinc-500 italic text-[10px] text-center">Nenhuma mensagem ainda...</div>`;
-        return;
-      }
-
-      listEl.innerHTML = chatMessages.map(m => `
-        <div class="bg-zinc-800/80 p-1 rounded border border-zinc-700/50 mb-1 break-words">
-          <span class="font-bold text-yellow-400">${escapeHtml(m.sender)}</span> <span class="text-[9px] text-zinc-400">(${m.time})</span>:
-          <div class="text-zinc-100 mt-0.5">${escapeHtml(m.text)}</div>
-        </div>
-      `).join('');
-
-      listEl.scrollTop = listEl.scrollHeight;
-    }
-
-    function renderPlayersManagement() {
-      const listEl = document.getElementById('playersManagementList');
-      const playerList = Object.values(players);
-
-      if (playerList.length === 0) {
-        listEl.innerHTML = `<div class="text-zinc-500 italic text-[10px] text-center">Nenhum jogador na sala.</div>`;
-        return;
-      }
-
-      listEl.innerHTML = playerList.map(p => {
-        const isMe = p.id === localPlayerId;
-        return `
-          <div class="bg-zinc-800 p-1.5 rounded flex items-center justify-between border border-zinc-700 mb-1">
-            <span class="font-bold text-white text-xs truncate max-w-[150px]">${escapeHtml(p.name || "Sem Nome")} ${isMe ? '(Você)' : ''}</span>
-            <span class="text-[9px] text-zinc-400">${p.id === currentRoom?.hostId ? 'Host' : 'Jogador'}</span>
-          </div>
-        `;
-      }).join('');
-    }
 
     function escapeHtml(text) {
       const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+      return String(text).replace(/[&<>"']/g, m => map[m]);
     }
-
-    function broadcastChatState() {
-      connections.forEach(client => {
-        if (client.open) {
-          client.send({ type: 'CHAT_SYNC', messages: chatMessages });
-        }
-      });
+    function renderChatMessages() {
+      const listEl = $('chatMessagesList');
+      if (chatMessages.length === 0) { listEl.innerHTML = `<div class="text-zinc-500 italic text-center">Nenhuma mensagem ainda...</div>`; return; }
+      listEl.innerHTML = chatMessages.map(m => `
+        <div class="bg-zinc-800/80 p-2 rounded-lg border border-zinc-700/50 mb-1 break-words">
+          <span class="font-bold text-yellow-400">${escapeHtml(m.sender)}</span> <span class="text-zinc-400" style="font-size:.8em">(${escapeHtml(m.time)})</span>:
+          <div class="text-zinc-100 mt-0.5">${escapeHtml(m.text)}</div>
+        </div>`).join('');
+      listEl.scrollTop = listEl.scrollHeight;
     }
+    function renderPlayersManagement() {
+      const listEl = $('playersManagementList');
+      if (!G || G.roster.size === 0) { listEl.innerHTML = `<div class="text-zinc-500 italic text-center">Nenhum jogador na sala.</div>`; return; }
+      listEl.innerHTML = [...G.roster.entries()].map(([sid, p]) => `
+        <div class="bg-zinc-800 p-2.5 rounded-lg flex items-center justify-between border border-zinc-700">
+          <span class="font-bold text-white truncate pr-2">
+            <span class="inline-block w-3 h-3 rounded-full mr-1.5 border ${p.t === 0 ? 'bg-yellow-400 border-black' : 'bg-black border-yellow-400'}"></span>${escapeHtml(p.n || "Sem Nome")} ${sid === G.mySid ? '(Você)' : ''}
+          </span>
+          <span class="text-zinc-400 shrink-0" style="font-size:.85em">${sid === 1 ? 'Host' : 'Jogador'}</span>
+        </div>`).join('');
+    }
+    function pushChat(m) {
+      chatMessages.push(m); if (chatMessages.length > 100) chatMessages.shift();
+      renderChatMessages();
+      if (m.from !== localPlayerId && $('chatDrawer').classList.contains('hidden')) $('chatBadge').classList.remove('hidden');
+    }
+    window.sendChatMessage = function () {
+      const input = $('chatInput'); const text = input.value.trim();
+      if (!text || !G) return;
+      const m = { sender: myPlayerName !== "" ? myPlayerName : "Anônimo", text: text.slice(0, 1000), from: localPlayerId, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+      input.value = "";
+      if (role === 'host') { pushChat(m); broadcastCtl({ ty: 'C', m }); }
+      else if (ctlConn && ctlConn.open) ctlConn.send({ ty: 'C', m });
+    };
 
     function playMenuMusic() {
-      matchAudio.pause();
-      matchAudio.currentTime = 0;
+      matchAudio.pause(); matchAudio.currentTime = 0;
       if (!audioEnabled) return;
-      menuAudio.play().catch(e => {});
+      menuAudio.play().catch(() => {});
     }
-
     function playMatchMusic() {
-      menuAudio.pause();
-      menuAudio.currentTime = 0;
+      menuAudio.pause(); menuAudio.currentTime = 0;
       if (!audioEnabled) return;
-      matchAudio.play().catch(e => {});
+      matchAudio.play().catch(() => {});
     }
 
+    // ---- efeitos sonoros (só tocam dentro da partida) ----
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
-
     function initAudio() {
-      if (!audioCtx) audioCtx = new AudioCtx();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      try { if (!audioCtx) audioCtx = new AudioCtx(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
     }
-
-    function playKickSound() {
-      if (!sfxEnabled) return;
-      try {
-        initAudio();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(140, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.1);
-      } catch (e) {}
+    ['pointerdown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, initAudio, { once: true, passive: true }));
+    const sfxOk = () => sfxEnabled && inMatch && !document.hidden && audioCtx;
+    function tone(type, f0, f1, vol, dur, when = 0) {
+      const t = audioCtx.currentTime + when;
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = type; osc.frequency.setValueAtTime(f0, t);
+      if (f1) osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      gain.gain.setValueAtTime(vol, t); gain.gain.exponentialRampToValueAtTime(0.01, t + dur);
+      osc.connect(gain); gain.connect(audioCtx.destination); osc.start(t); osc.stop(t + dur);
     }
-
-    function playBounceSound() {
-      if (!sfxEnabled) return;
-      try {
-        initAudio();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.08);
-      } catch (e) {}
+    function playKickSound() { if (!sfxOk()) return; try { tone('sine', 140, 30, 0.4, 0.1); } catch (e) {} }
+    let lastBounceAt = 0;
+    function playBounceSound(speed) {
+      if (!sfxOk() || speed < 1.2) return;
+      const now = performance.now(); if (now - lastBounceAt < 90) return; lastBounceAt = now;
+      try { tone('triangle', 220, 0, 0.2, 0.08); } catch (e) {}
     }
-
-    function playGoalSound() {
-      if (!sfxEnabled) return;
-      try {
-        initAudio();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.6);
-      } catch (e) {}
-    }
-
+    function playGoalSound() { if (!sfxOk()) return; try { tone('sawtooth', 880, 0, 0.3, 0.6); } catch (e) {} }
     function playVictoryTune() {
-      if (!sfxEnabled) return;
-      try {
-        initAudio();
-        const now = audioCtx.currentTime;
-        const notes = [261.63, 329.63, 392.00, 523.25];
-        notes.forEach((freq, idx) => {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.12);
-          gain.gain.setValueAtTime(0.2, now + idx * 0.12);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.3);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now + idx * 0.12);
-          osc.stop(now + idx * 0.12 + 0.3);
-        });
-      } catch (e) {}
+      if (!sfxOk()) return;
+      try { [261.63, 329.63, 392.00, 523.25].forEach((f, i) => tone('triangle', f, 0, 0.2, 0.3, i * 0.12)); } catch (e) {}
     }
 
-    let currentRoom = null;
-    let localPlayerId = myPersistentClientId;
-    let assignedTeam = 'yellow';
-    let isGameOver = false;
-    let gameMatchTime = 300;
-    let matchTimerInterval = null;
-    let goalLock = false;
-
-    const FIELD_CONFIG = { width: 800, height: 460, goalSize: 110 };
-    const PLAYER_DEFAULTS = { radius: 16, accel: 0.19, damping: 0.90, kickPower: 9.5 };
-    const MAX_PLAYERS_PER_ROOM = 4;
-
-    let canvas = document.getElementById('gameCanvas');
-    let ctx = canvas.getContext('2d');
-
-    let players = {};
-    let ball = { x: 400, y: 230, vx: 0, vy: 0, radius: 10, damping: 0.965, hidden: false };
-    let scores = { yellow: 0, black: 0 };
+    /* ==========================================================================================
+       CONTROLES
+       ========================================================================================== */
     let keys = {};
+    let joystickTouchId = null, joy = { x: 0, y: 0 };
+    let kickHeld = 0, kickPulseT = 0, kickCount = 0;
+    const joystickBase = $('joystickBase'), joystickStick = $('joystickStick'), kickBtn = $('touchKickBtn');
 
-    let joystickTouchId = null;
-    let joystickVector = { x: 0, y: 0 };
-
-    let lastFrameTime = performance.now();
-
-    const joystickBase = document.getElementById('joystickBase');
-    const joystickStick = document.getElementById('joystickStick');
-    const kickBtn = document.getElementById('touchKickBtn');
+    function kickDown() { kickHeld = 1; kickPulseT = 4; kickCount++; }
+    function kickUp() { kickHeld = 0; }
 
     joystickBase.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      if (joystickTouchId === null) {
-        const touch = e.changedTouches[0];
-        joystickTouchId = touch.identifier;
-      }
+      if (joystickTouchId === null) joystickTouchId = e.changedTouches[0].identifier;
     });
-
     joystickBase.addEventListener('touchmove', (e) => {
       e.preventDefault();
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
         if (touch.identifier === joystickTouchId) {
           const rect = joystickBase.getBoundingClientRect();
-          const centerX = rect.left + rect.width / 2;
-          const centerY = rect.top + rect.height / 2;
-          let dx = touch.clientX - centerX;
-          let dy = touch.clientY - centerY;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = 30;
-
-          if (dist > maxDist) {
-            dx = (dx / dist) * maxDist;
-            dy = (dy / dist) * maxDist;
-          }
-
+          let dx = touch.clientX - (rect.left + rect.width / 2), dy = touch.clientY - (rect.top + rect.height / 2);
+          const dist = Math.sqrt(dx * dx + dy * dy), maxDist = 30;
+          if (dist > maxDist) { dx = (dx / dist) * maxDist; dy = (dy / dist) * maxDist; }
           joystickStick.style.transform = `translate(${dx}px, ${dy}px)`;
-          joystickVector.x = dx / maxDist;
-          joystickVector.y = dy / maxDist;
+          joy.x = dx / maxDist; joy.y = dy / maxDist;
         }
       }
     });
-
     const resetJoystick = (e) => {
       for (let i = 0; i < e.changedTouches.length; i++) {
         if (e.changedTouches[i].identifier === joystickTouchId) {
-          joystickTouchId = null;
-          joystickVector.x = 0;
-          joystickVector.y = 0;
+          joystickTouchId = null; joy.x = 0; joy.y = 0;
           joystickStick.style.transform = `translate(0px, 0px)`;
         }
       }
     };
-
     window.addEventListener('touchend', resetJoystick);
     window.addEventListener('touchcancel', resetJoystick);
 
-    function triggerKick() {
-      keys[' '] = true;
-      if (!isHost && conn && conn.open) {
-        conn.send({ type: 'PLAYER_KICK', playerId: localPlayerId });
-      }
-    }
+    kickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); kickDown(); });
+    kickBtn.addEventListener('touchend', (e) => { e.preventDefault(); kickUp(); });
+    kickBtn.addEventListener('touchcancel', () => kickUp());
 
-    kickBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      triggerKick();
-    });
-    kickBtn.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      keys[' '] = false;
-    });
-
-    window.addEventListener('keydown', (e) => { 
-      if (['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase())) return;
+    const typing = () => ['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase());
+    window.addEventListener('keydown', (e) => {
+      if (typing()) return;
       const key = e.key.toLowerCase();
-      if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key)) {
-        e.preventDefault();
-      }
-      if (key === ' ') triggerKick();
-      else keys[key] = true; 
+      if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', 'x'].includes(key)) e.preventDefault();
+      if (key === ' ' || key === 'x') { if (!e.repeat) kickDown(); }
+      else keys[key] = true;
     });
-
-    window.addEventListener('keyup', (e) => { 
-      if (['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase())) return;
-      keys[e.key.toLowerCase()] = false; 
+    window.addEventListener('keyup', (e) => {
+      const key = e.key.toLowerCase();
+      if (key === ' ' || key === 'x') kickUp();
+      else keys[key] = false;
     });
+    window.addEventListener('blur', () => { keys = {}; kickUp(); });
 
-    function generateThreeDigitCode() {
-      let code = '';
-      for (let i = 0; i < 3; i++) {
-        code += Math.floor(Math.random() * 10).toString();
-      }
-      return code;
+    function readInput() {
+      let x = 0, y = 0;
+      if (keys['arrowleft'] || keys['a']) x -= 1;
+      if (keys['arrowright'] || keys['d']) x += 1;
+      if (keys['arrowup'] || keys['w']) y -= 1;
+      if (keys['arrowdown'] || keys['s']) y += 1;
+      x += joy.x; y += joy.y;
+      const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; }
+      const k = (kickHeld || kickPulseT > 0) ? 1 : 0;
+      if (kickPulseT > 0) kickPulseT--;
+      return { x: r2(x), y: r2(y), k };
     }
 
-    function initPeer(customId, onReady) {
-      if (peer && !peer.destroyed) {
-        if (peer.id === customId || !customId) {
-          if (onReady) onReady();
-          return;
-        } else {
-          peer.destroy();
-          peer = null;
+    /* ==========================================================================================
+       REDE (PeerJS). Host decide tudo; cliente prevê o próprio movimento e corrige com o que o host manda.
+       Cada cliente abre 2 canais: "ctl" (confiável: entrar, chat, lista de jogadores) e
+       "fast" (não ordenado: entradas e estado do jogo) — assim uma perda de pacote não trava o jogo.
+       ========================================================================================== */
+    function teardown() {
+      genId++; role = null; inMatch = false; G = null;
+      clearTimeout(connectTm); clearInterval(watchTm); watchTm = null;
+      ctlConn = null; fastConn = null; members = new Map();
+      if (peer) { try { peer.destroy(); } catch (e) {} peer = null; }
+      currentRoom = null; peerErr = null; chatMessages = [];
+      kickHeld = 0; kickPulseT = 0;
+      setBusy(false);
+    }
+    function fatal(msg) { teardown(); window.showNotification(msg); }
+
+    function newPeer(id, onOpen) {
+      const gen = genId;
+      let p;
+      try { p = id ? new Peer(id, { config: ICE }) : new Peer({ config: ICE }); }
+      catch (e) { fatal('Não foi possível iniciar a conexão.'); return null; }
+      peer = p;
+      p.on('open', () => { if (gen === genId) onOpen(p); });
+      p.on('error', err => {
+        if (gen !== genId) return;
+        const t = err && err.type;
+        if (peerErr && peerErr(t)) return;
+        if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(t)) fatal('Sem conexão com o servidor. Verifique sua internet e tente de novo.');
+      });
+      p.on('disconnected', () => { if (gen === genId && !p.destroyed) { try { p.reconnect(); } catch (e) {} } });
+      p.on('connection', c => { if (gen === genId && role === 'host') hostOnConnection(c, gen); else { try { c.close(); } catch (e) {} } });
+      return p;
+    }
+
+    function generateThreeDigitCode() { let c = ''; for (let i = 0; i < 3; i++) c += Math.floor(Math.random() * 10); return c; }
+
+    window.confirmCreateRoom = function () {
+      if (busy) return;
+      myPlayerName = $('playerNameInput').value.trim();
+      createFlow($('roomNameInput').value.trim() || "Sala Particular", 0);
+    };
+    function createFlow(roomName, tries) {
+      teardown(); setBusy(true);
+      const code = generateThreeDigitCode();
+      peerErr = t => {
+        if (t === 'unavailable-id') {
+          if (tries < 10) createFlow(roomName, tries + 1); else fatal('Não foi possível criar a sala. Tente de novo.');
+          return true;
         }
-      }
-      
-      const peerOptions = {
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-          ]
-        }
+        return false;
       };
-
-      peer = customId ? new Peer(customId, peerOptions) : new Peer(peerOptions);
-      
-      peer.on('open', (id) => {
-        if (onReady) onReady();
-      });
-
-      peer.on('connection', (incomingConn) => {
-        if (isHost) {
-          const currentTotal = Object.keys(players).length + 1;
-          if (currentTotal > MAX_PLAYERS_PER_ROOM) {
-            incomingConn.on('open', () => {
-              incomingConn.send({ type: 'ROOM_FULL' });
-              setTimeout(() => incomingConn.close(), 500);
-            });
-            return;
-          }
-          connections.push(incomingConn);
-          setupHostConnection(incomingConn);
-        }
-      });
-
-      peer.on('error', (err) => {
-        if (err.type === 'unavailable-id') {
-          if (onReady) onReady();
-        }
+      newPeer('frk_p_' + code, p => {
+        role = 'host'; currentRoom = { id: p.id, code, name: roomName, type: 'privada', hostId: p.id };
+        startHostSession();
       });
     }
-
-    function setupHostConnection(c) {
-      c.on('data', (data) => {
-        if (data.type === 'JOIN_REQUEST') {
-          if (Object.keys(players).length >= MAX_PLAYERS_PER_ROOM) {
-            c.send({ type: 'ROOM_FULL' });
-            return;
-          }
-
-          const totalPlayersCount = Object.keys(players).length;
-          const newTeam = (totalPlayersCount % 2 === 0) ? 'yellow' : 'black';
-          const cleanName = data.name !== undefined ? data.name.trim() : "";
-          
-          players[data.playerId] = {
-            id: data.playerId,
-            name: cleanName,
-            team: newTeam,
-            x: newTeam === 'yellow' ? FIELD_CONFIG.width * 0.25 : FIELD_CONFIG.width * 0.75,
-            y: FIELD_CONFIG.height / 2,
-            vx: 0,
-            vy: 0,
-            radius: PLAYER_DEFAULTS.radius,
-            accel: PLAYER_DEFAULTS.accel,
-            damping: PLAYER_DEFAULTS.damping,
-            inputs: { ax: 0, ay: 0 }
-          };
-
-          c.send({ 
-            type: 'WELCOME', 
-            players, 
-            ball, 
-            scores, 
-            assignedTeam: newTeam,
-            roomType: 'privada',
-            roomCode: (currentRoom && currentRoom.code) ? currentRoom.code : '',
-            chatMessages: chatMessages
-          });
-
-          broadcastState();
-          renderPlayersManagement();
-        } else if (data.type === 'PLAYER_MOVE') {
-          if (players[data.playerId]) {
-            players[data.playerId].inputs = data.inputs || { ax: 0, ay: 0 };
-          }
-        } else if (data.type === 'PLAYER_KICK') {
-          playKickSound();
-          const p = players[data.playerId];
-          if (p) {
-            const dx = ball.x - p.x;
-            const dy = ball.y - p.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < p.radius + ball.radius + 18) {
-              const nx = dx / (dist || 1);
-              const ny = dy / (dist || 1);
-              ball.vx = nx * PLAYER_DEFAULTS.kickPower;
-              ball.vy = ny * PLAYER_DEFAULTS.kickPower;
-            }
-          }
-        } else if (data.type === 'CHAT_MESSAGE') {
-          chatMessages.push(data.message);
-          renderChatMessages();
-          if (document.getElementById('chatDrawer').classList.contains('hidden')) {
-            document.getElementById('chatBadge').classList.remove('hidden');
-          }
-          broadcastChatState();
-        }
-      });
-
-      c.on('close', () => { handleClientDisconnection(c); });
-      c.on('error', () => { handleClientDisconnection(c); });
-    }
-
-    function handleClientDisconnection(c) {
-      connections = connections.filter(conn => conn !== c);
-      for (let id in players) {
-        if (id !== localPlayerId) {
-          delete players[id];
-        }
-      }
-      broadcastState();
-      renderPlayersManagement();
-    }
-
-    function broadcastState() {
-      connections.forEach(client => {
-        if (client.open) {
-          client.send({ type: 'STATE_SYNC', players, ball, scores, hostId: localPlayerId });
-        }
-      });
-      try {
-        let counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}');
-        if (currentRoom && currentRoom.type === 'publica') {
-          counts[currentRoom.id] = Object.keys(players).length;
-          localStorage.setItem('futrok_player_counts', JSON.stringify(counts));
-        }
-      } catch(e){}
-    }
-
-    window.confirmCreateRoom = function() {
-      const roomName = document.getElementById('roomNameInput').value.trim() || "Sala Particular";
-      const playerName = document.getElementById('playerNameInput').value.trim();
-      myPlayerName = playerName;
-      const roomCode = generateThreeDigitCode();
-
-      const customPeerId = 'frk_p_' + roomCode;
-
-      chatMessages = [];
-      intentionalLeave = false;
-      initPeer(customPeerId, () => {
-        currentRoom = {
-          id: peer.id,
-          code: roomCode,
-          name: roomName,
-          type: 'privada',
-          hostId: peer.id,
-          timestamp: Date.now()
-        };
-        isHost = true;
-        assignedTeam = 'yellow';
-
-        initGameSession(playerName);
-      });
+    window.joinByCode = function () {
+      if (busy) return;
+      const inputCode = $('joinCodeInput').value.trim();
+      myPlayerName = $('playerNameInput').value.trim();
+      if (!inputCode || inputCode.length !== 3) { window.showNotification("Digite um código válido de 3 números."); return; }
+      connectFlow('frk_p_' + inputCode, "Sala Particular", 'privada', false, 0);
+    };
+    window.joinPublicRoom = function (roomId, roomName) {
+      if (busy) return;
+      myPlayerName = $('playerNameInput').value.trim();
+      connectFlow(roomId, roomName, 'publica', true, 0);
     };
 
-    window.joinByCode = function() {
-      const inputCode = document.getElementById('joinCodeInput').value.trim();
-      const playerName = document.getElementById('playerNameInput').value.trim();
-      myPlayerName = playerName;
-      
-      if (!inputCode || inputCode.length !== 3) {
-        alert("Digite um código válido de 3 números.");
+    // tenta entrar como cliente; numa sala pública vazia, vira o host dela
+    function connectFlow(hostId, roomName, type, canHost, tries) {
+      teardown(); const gen = genId; setBusy(true);
+      let settled = false;
+      const fail = () => {
+        if (settled || gen !== genId) return; settled = true; clearTimeout(connectTm);
+        if (canHost) becomeHost(hostId, roomName, type, tries);
+        else fatal("Esta sala particular não está aberta no momento.");
+      };
+      connectTm = setTimeout(fail, 9000);
+      peerErr = t => { if (t === 'peer-unavailable' || t === 'webrtc') { fail(); return true; } return false; };
+      newPeer(null, p => {
+        const c = p.connect(hostId, { label: 'ctl', reliable: true, serialization: 'json' });
+        ctlConn = c;
+        c.on('open', () => {
+          if (gen !== genId || settled) return;
+          settled = true; clearTimeout(connectTm);
+          connectTm = setTimeout(() => { if (gen === genId && !G) fatal('A sala não respondeu. Tente de novo.'); }, 9000);
+          currentRoom = { id: hostId, name: roomName, type, hostId };
+          if (hostId.indexOf('frk_p_') === 0) currentRoom.code = hostId.slice(6);
+          c.send({ ty: 'J', id: localPlayerId, name: myPlayerName });
+        });
+        c.on('data', m => { if (gen === genId) onHostMsg(m, gen); });
+        c.on('close', () => { if (gen === genId) hostLost(); });
+        c.on('error', () => { if (gen !== genId) return; if (settled) hostLost(); else fail(); });
+      });
+    }
+    function becomeHost(id, roomName, type, tries) {
+      teardown(); setBusy(true);
+      peerErr = t => {
+        if (t === 'unavailable-id') {   // alguém virou host dessa sala agora há pouco: entra nela
+          if (tries < 3) connectFlow(id, roomName, type, true, tries + 1); else fatal('Sala ocupada no momento. Tente novamente.');
+          return true;
+        }
+        return false;
+      };
+      newPeer(id, p => { role = 'host'; currentRoom = { id, name: roomName, type, hostId: p.id }; startHostSession(); });
+    }
+    function hostLost() {
+      const wasIn = !!G;
+      fatal(wasIn ? "Partida encerrada: o Host saiu da sala." : "Não foi possível entrar na sala.");
+    }
+
+    // ---------------- lado do host ----------------
+    function startHostSession() {
+      clearTimeout(connectTm); setBusy(false);
+      G = newGame('host'); members = new Map(); sidCounter = 1; hostTick = 0;
+      const sid = sidCounter; G.mySid = sid; G.rv = 1;
+      members.set(sid, { sid, id: localPlayerId, name: myPlayerName, team: 0, ctl: null, fast: null, meta: hostMetaNew(), tok: '' });
+      G.S.players[sid] = newPlayer(0);
+      syncRoster(); updateCounts();
+      initGameSession();
+    }
+    function syncRoster() {
+      G.roster = new Map([...members.values()].map(m => [m.sid, { id: m.id, n: m.name, t: m.team }]));
+    }
+    const rosterList = () => [...members.values()].map(m => ({ s: m.sid, id: m.id, n: m.name, t: m.team }));
+    function memberByTok(tok) { if (!tok) return null; for (const m of members.values()) if (m.tok === tok) return m; return null; }
+    function broadcastCtl(obj) { members.forEach(m => { if (m.ctl && m.ctl.open) { try { m.ctl.send(obj); } catch (e) {} } }); }
+    function sendFast(m, obj) {
+      const c = (m.fast && m.fast.open) ? m.fast : m.ctl;
+      if (!c || !c.open) return;
+      const dc = c.dataChannel; if (dc && dc.bufferedAmount > 32768) return;   // não deixa fila crescer (fila = lag)
+      try { c.send(obj); } catch (e) {}
+    }
+    function updateCounts() {
+      try {
+        if (currentRoom && currentRoom.type === 'publica' && role === 'host') {
+          const counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}');
+          counts[currentRoom.id] = members.size; localStorage.setItem('futrok_player_counts', JSON.stringify(counts));
+        }
+      } catch (e) {}
+    }
+    function removeMember(sid) {
+      if (!members.has(sid)) return;
+      members.delete(sid); delete G.S.players[sid]; G.rv++;
+      syncRoster(); broadcastCtl({ ty: 'R', v: G.rv, list: rosterList() });
+      updateCounts(); renderPlayersManagement();
+    }
+    function hostOnConnection(c, gen) {
+      if (c.label === 'fast') {
+        c.on('open', () => { const m = memberByTok(c.metadata && c.metadata.tok); if (!m) { try { c.close(); } catch (e) {} return; } m.fast = c; });
+        c.on('data', d => {
+          if (gen !== genId || !d || d.ty !== 'I') return;
+          const m = memberByTok(c.metadata && c.metadata.tok); if (m) hostOnInput(m.meta, d, performance.now());
+        });
+        c.on('close', () => { const m = memberByTok(c.metadata && c.metadata.tok); if (m && m.fast === c) m.fast = null; });
         return;
       }
-
-      const targetHostId = 'frk_p_' + inputCode;
-      connectToHost(targetHostId, playerName, "Sala Particular", 'privada');
-    };
-
-    window.joinPublicRoom = function(roomId, roomName) {
-      const playerName = document.getElementById('playerNameInput').value.trim();
-      myPlayerName = playerName;
-      connectToHost(roomId, playerName, roomName, 'publica');
-    };
-
-    function connectToHost(hostId, playerName, roomName = "Partida Online", roomType = 'privada') {
-      intentionalLeave = false;
-      initPeer(null, () => {
-        conn = peer.connect(hostId, { reliable: true });
-        
-        let connected = false;
-
-        const timeout = setTimeout(() => {
-          if (!connected) {
-            if (conn) { try { conn.close(); } catch(e){} }
-            
-            if (roomType === 'publica') {
-              if (peer) { peer.destroy(); peer = null; }
-              initPeer(hostId, () => {
-                currentRoom = { id: hostId, name: roomName, type: 'publica', hostId: peer.id };
-                isHost = true;
-                assignedTeam = 'yellow';
-                chatMessages = [];
-                initGameSession(playerName);
-              });
-            } else {
-              alert("Esta sala particular não está aberta no momento.");
-            }
-          }
-        }, 2000);
-
-        conn.on('open', () => {
-          clearTimeout(timeout);
-          connected = true;
-          isHost = false;
-          currentRoom = { id: hostId, name: roomName, type: roomType };
-          conn.send({ type: 'JOIN_REQUEST', name: playerName, playerId: localPlayerId });
-        });
-
-        conn.on('data', (data) => {
-          if (data.type === 'ROOM_FULL') {
-            alert("Esta sala já está cheia (limite de 4 jogadores)!");
-            window.leaveRoom();
-            return;
-          }
-          if (data.type === 'WELCOME') {
-            assignedTeam = data.assignedTeam;
-            players = data.players;
-            ball = data.ball;
-            scores = data.scores;
-            currentRoom.type = data.roomType || roomType;
-            if (data.roomCode) {
-              currentRoom.code = data.roomCode;
-            }
-            chatMessages = data.chatMessages || [];
-            initGameSession(playerName);
-          } else if (data.type === 'STATE_SYNC') {
-            if (!currentRoom) return;
-            players = data.players;
-            ball = data.ball;
-            scores = data.scores;
-            document.getElementById('scoreYellow').innerText = scores.yellow;
-            document.getElementById('scoreBlack').innerText = scores.black;
-            if (!document.getElementById('playersDrawer').classList.contains('hidden')) {
-              renderPlayersManagement();
-            }
-          } else if (data.type === 'GOAL_EVENT') {
-            scores = data.scores;
-            document.getElementById('scoreYellow').innerText = scores.yellow;
-            document.getElementById('scoreBlack').innerText = scores.black;
-            playGoalSound();
-          } else if (data.type === 'GAME_OVER') {
-            displayVictoryScreen(data.winnerTeam);
-          } else if (data.type === 'CHAT_SYNC') {
-            chatMessages = data.messages || [];
-            renderChatMessages();
-            if (document.getElementById('chatDrawer').classList.contains('hidden')) {
-              document.getElementById('chatBadge').classList.remove('hidden');
-            }
-          }
-        });
-
-        conn.on('close', () => {
-          if (!intentionalLeave && currentRoom) {
-            alert("Partida encerrada: o Host saiu da sala.");
-          }
-          window.leaveRoom();
-        });
-
-        conn.on('error', () => {
-          if (!intentionalLeave && currentRoom) {
-            alert("Partida encerrada: o Host saiu da sala.");
-          }
-          window.leaveRoom();
-        });
-      });
+      c.on('data', d => { if (gen === genId && d) hostOnCtl(c, d); });
+      const gone = () => { if (gen !== genId) return; for (const m of members.values()) if (m.ctl === c) { removeMember(m.sid); break; } };
+      c.on('close', gone); c.on('error', gone);
+    }
+    function hostOnCtl(c, d) {
+      if (d.ty === 'J') {
+        for (const m of members.values()) if (m.ctl === c) return;
+        for (const m of [...members.values()]) if (m.id === d.id && m.sid !== G.mySid) removeMember(m.sid);   // mesma pessoa reconectando
+        if (members.size >= MAX_PLAYERS_PER_ROOM) { try { c.send({ ty: 'F' }); } catch (e) {} setTimeout(() => { try { c.close(); } catch (e) {} }, 400); return; }
+        const sid = ++sidCounter, tok = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        let t0 = 0, t1 = 0; members.forEach(m => { if (m.team === 0) t0++; else t1++; });
+        const team = t0 <= t1 ? 0 : 1;
+        members.set(sid, { sid, id: String(d.id || ''), name: String(d.name || '').trim().slice(0, 15), team, ctl: c, fast: null, meta: hostMetaNew(), tok });
+        G.S.players[sid] = newPlayer(team); G.rv++;
+        syncRoster();
+        try { c.send({ ty: 'W', sid, tok, team, rv: G.rv, list: rosterList(), snap: buildSnap(G.S, G.snapN, {}, G.rv), chat: chatMessages }); } catch (e) {}
+        broadcastCtl({ ty: 'R', v: G.rv, list: rosterList() });
+        updateCounts(); renderPlayersManagement();
+      } else if (d.ty === 'C' && d.m && typeof d.m.text === 'string') {
+        const m = { sender: String(d.m.sender || 'Anônimo').slice(0, 15), text: d.m.text.slice(0, 1000), from: String(d.m.from || ''), time: String(d.m.time || '').slice(0, 8) };
+        pushChat(m); broadcastCtl({ ty: 'C', m });
+      }
+    }
+    const hostEv = { kick: () => playKickSound(), goal: () => playGoalSound(), bounce: s => playBounceSound(s) };
+    function broadcastSnap() {
+      const acks = {};
+      members.forEach((m, sid) => { if (sid !== G.mySid) acks[sid] = m.meta.seq; });
+      const snap = buildSnap(G.S, ++G.snapN, acks, G.rv);
+      members.forEach(m => { if (m.sid !== G.mySid) sendFast(m, snap); });
     }
 
-    window.refreshRoomList = function() {
-      const listEl = document.getElementById('roomList');
-      let counts = {};
-      try {
-        counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}');
-      } catch(e){}
+    // ---------------- lado do cliente ----------------
+    function onHostMsg(m, gen) {
+      if (!m || typeof m.ty !== 'string') return;
+      if (m.ty === 'W') {
+        if (G) return;
+        clearTimeout(connectTm); setBusy(false);
+        G = newGame('client'); role = 'client';
+        G.mySid = m.sid; G.rv = m.rv; G.roster = new Map(m.list.map(x => [x.s, { id: x.id, n: x.n, t: x.t }]));
+        G.S = stateFromSnap(m.snap);
+        chatMessages = m.chat || [];
+        try {
+          const f = peer.connect(currentRoom.hostId, { label: 'fast', reliable: false, serialization: 'json', metadata: { tok: m.tok } });
+          fastConn = f;
+          f.on('data', d => { if (gen === genId) onHostMsg(d, gen); });
+          f.on('close', () => { if (fastConn === f) fastConn = null; });
+        } catch (e) { fastConn = null; }
+        initGameSession();
+      } else if (!G) {
+        if (m.ty === 'F') fatal("Esta sala já está cheia (limite de 4 jogadores)!");
+      } else if (m.ty === 'S') {
+        if (m.n <= G.lastSn) return;
+        G.lastSn = m.n; G.lastSnAt = performance.now();
+        const oldScore = G.S.score[0] + G.S.score[1];
+        const old = reconcile(G, m);
+        if (m.sc[0] + m.sc[1] > oldScore) playGoalSound();
+        for (const id in G.S.players) { if (+id !== G.mySid && old.players[id] && !old.players[id].kl && G.S.players[id].kl) playKickSound(); }
+        const e = G.sentAt[(m.a && m.a[G.mySid]) & 255];
+        if (e && m.a && e.s === m.a[G.mySid]) { const rt = G.lastSnAt - e.t; G.rtt = G.rtt ? G.rtt * 0.85 + rt * 0.15 : rt; }
+      } else if (m.ty === 'R') {
+        if (m.v <= G.rv) return;
+        G.rv = m.v; G.roster = new Map(m.list.map(x => [x.s, { id: x.id, n: x.n, t: x.t }]));
+        for (const id in G.S.players) if (!G.roster.has(+id)) delete G.S.players[id];
+        renderPlayersManagement();
+      } else if (m.ty === 'C' && m.m) {
+        pushChat({ sender: String(m.m.sender), text: String(m.m.text), from: String(m.m.from || ''), time: String(m.m.time || '') });
+      }
+    }
+    function sendInput(msg) {
+      const c = (fastConn && fastConn.open) ? fastConn : ctlConn;
+      if (!c || !c.open) return;
+      const dc = c.dataChannel; if (dc && dc.bufferedAmount > 32768) return;
+      try { c.send(msg); } catch (e) {}
+    }
+    const clientEv = { kick: () => playKickSound(), bounce: s => playBounceSound(s) };
 
+    /* ==========================================================================================
+       PARTIDA: laço de jogo, HUD e desenho
+       ========================================================================================== */
+    function newGame(r) {
+      return { role: r, S: newState(), prev: { b: [0, 0], p: {} }, off: {}, seq: 0, log: new Array(256), sentAt: new Array(256),
+        mySid: 0, roster: new Map(), rv: 0, lastSn: -1, lastSnAt: performance.now(), rtt: 0, snapN: 0, hud: { y: -1, b: -1, t: -1, o: 0, ping: 0, tick: 0 } };
+    }
+
+    function initGameSession() {
+      $('lobbyScreen').classList.add('hidden');
+      $('mainFooter').classList.add('hidden');
+      $('gameScreen').classList.remove('hidden');
+      $('victoryModal').classList.add('hidden');
+      $('chatDrawer').classList.add('hidden');
+      $('playersDrawer').classList.add('hidden');
+      $('chatBadge').classList.add('hidden');
+      renderChatMessages(); renderPlayersManagement();
+
+      inMatch = true;
+      if (audioEnabled) playMatchMusic();
+
+      keys = {}; joy = { x: 0, y: 0 }; kickHeld = 0; kickPulseT = 0; kickCount = 0;
+
+      const codeDisplayEl = $('roomCodeDisplay');
+      if (currentRoom.type === 'privada' && currentRoom.code) { $('roomCodeText').innerText = currentRoom.code; codeDisplayEl.style.display = 'flex'; }
+      else codeDisplayEl.style.display = 'none';
+      $('roomTitleDisplay').innerText = currentRoom.name || "Partida Online";
+      $('pingDisplay').innerText = role === 'host' ? 'HOST' : '';
+      $('scoreYellow').innerText = "0"; $('scoreBlack').innerText = "0";
+
+      fitCanvas();
+      capturePrev();
+      if (role === 'client') {
+        watchTm = setInterval(() => { if (G && performance.now() - G.lastSnAt > 8000) fatal("Conexão com o host perdida."); }, 1000);
+      }
+      startLoop();
+    }
+
+    function startLoop() {
+      const myGen = genId; let last = performance.now(), acc = 0;
+      function frame(ts) {
+        if (myGen !== genId || !G) return;
+        acc += Math.max(0, Math.min(ts - last, 100)); last = ts;
+        let n = 0;
+        while (acc >= STEP && n < 6) { acc -= STEP; tickOnce(); n++; }
+        if (n === 6) acc = 0;
+        render(acc / STEP);
+        updateHud();
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function capturePrev() {
+      const S = G.S, pv = G.prev;
+      pv.b = [S.ball.x, S.ball.y]; pv.p = {};
+      for (const id in S.players) { const q = S.players[id]; pv.p[id] = [q.x, q.y]; }
+    }
+
+    function tickOnce() {
+      const S = G.S;
+      capturePrev();
+      const inp = readInput();
+      if (G.role === 'host') {
+        const now = performance.now(), ins = {};
+        members.forEach((m, sid) => { ins[sid] = sid === G.mySid ? inp : hostIns(m.meta, now); });
+        stepSim(S, ins, true, hostEv);
+        hostTick++; broadcastSnap();
+      } else {
+        const s = ++G.seq;
+        G.log[s & 255] = { s, x: inp.x, y: inp.y, k: inp.k };
+        G.sentAt[s & 255] = { s, t: performance.now() };
+        sendInput({ ty: 'I', s, x: inp.x, y: inp.y, k: inp.k, kn: kickCount });
+        const ins = {};
+        for (const id in S.players) { const q = S.players[id]; ins[id] = (+id === G.mySid) ? inp : { x: q.ix, y: q.iy, k: 0 }; }
+        stepSim(S, ins, false, clientEv);
+        for (const key in G.off) { const o = G.off[key]; o[0] *= 0.88; o[1] *= 0.88; }
+      }
+    }
+
+    function updateHud() {
+      const S = G.S, h = G.hud;
+      if (h.y !== S.score[0] || h.b !== S.score[1]) { h.y = S.score[0]; h.b = S.score[1]; $('scoreYellow').innerText = h.y; $('scoreBlack').innerText = h.b; }
+      if (h.t !== S.timeLeft) {
+        h.t = S.timeLeft;
+        $('gameTimer').innerText = String(Math.floor(h.t / 60)).padStart(2, '0') + ":" + String(h.t % 60).padStart(2, '0');
+      }
+      if (S.over && !h.o) { h.o = 1; displayVictoryScreen(S.over); playVictoryTune(); }
+      if (G.role === 'client') {
+        if (++h.tick % 20 === 0) { const p = Math.round(G.rtt); if (p !== h.ping) { h.ping = p; $('pingDisplay').innerText = 'PING ' + p + ' ms'; } }
+      }
+    }
+
+    function displayVictoryScreen(winner) {
+      const msgEl = $('victoryMessage');
+      if (winner === 1) { msgEl.className = "font-black tracking-wide mb-4 uppercase text-yellow-400"; msgEl.innerText = "FIM DE JOGO - VITÓRIA DO TIME AMARELO!"; }
+      else if (winner === 2) { msgEl.className = "font-black tracking-wide mb-4 uppercase text-zinc-200"; msgEl.innerText = "FIM DE JOGO - VITÓRIA DO TIME PRETO!"; }
+      else { msgEl.className = "font-black tracking-wide mb-4 uppercase text-white"; msgEl.innerText = "FIM DE JOGO - EMPATE!"; }
+      $('victoryModal').classList.remove('hidden');
+    }
+
+    window.leaveRoom = function () {
+      if (currentRoom && currentRoom.type === 'publica' && role === 'host') {
+        try { const counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}'); counts[currentRoom.id] = 0; localStorage.setItem('futrok_player_counts', JSON.stringify(counts)); } catch (e) {}
+      }
+      teardown(); showLobby();
+    };
+
+    // ---- desenho ----
+    let view = { scale: 1, dpr: 1 };
+    const staticLayer = document.createElement('canvas');
+    function fitCanvas() {
+      const cont = $('canvasContainer'), cw = cont.clientWidth, ch = cont.clientHeight;
+      if (cw < 50 || ch < 50) return;
+      const scale = Math.min(cw / FIELD.w, ch / FIELD.h);
+      const cssW = Math.floor(FIELD.w * scale), cssH = Math.floor(FIELD.h * scale);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
+      canvas.width = Math.round(cssW * dpr); canvas.height = Math.round(cssH * dpr);
+      view = { scale: cssW / FIELD.w, dpr };
+      buildStatic();
+    }
+    function buildStatic() {
+      staticLayer.width = canvas.width; staticLayer.height = canvas.height;
+      const c = staticLayer.getContext('2d'), s = view.scale * view.dpr;
+      c.setTransform(s, 0, 0, s, 0, 0);
+      c.fillStyle = "#18181b"; c.fillRect(0, 0, FIELD.w, FIELD.h);
+      c.strokeStyle = "rgba(250, 204, 21, 0.4)"; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(FIELD.w / 2, 0); c.lineTo(FIELD.w / 2, FIELD.h); c.stroke();
+      c.beginPath(); c.arc(FIELD.w / 2, FIELD.h / 2, 60, 0, Math.PI * 2); c.stroke();
+      const gt = (FIELD.h - FIELD.goal) / 2;
+      c.fillStyle = "rgba(250, 204, 21, 0.2)"; c.fillRect(0, gt, 12, FIELD.goal);
+      c.strokeStyle = "#facc15"; c.strokeRect(0, gt, 12, FIELD.goal);
+      c.fillStyle = "rgba(255, 255, 255, 0.1)"; c.fillRect(FIELD.w - 12, gt, 12, FIELD.goal);
+      c.strokeStyle = "#ffffff"; c.strokeRect(FIELD.w - 12, gt, 12, FIELD.goal);
+    }
+    window.addEventListener('resize', () => { if (inMatch) fitCanvas(); });
+    window.addEventListener('orientationchange', () => setTimeout(() => { if (inMatch) fitCanvas(); }, 250));
+    document.addEventListener('fullscreenchange', () => setTimeout(() => { if (inMatch) fitCanvas(); }, 150));
+    if (window.ResizeObserver) new ResizeObserver(() => { if (inMatch) fitCanvas(); }).observe($('canvasContainer'));
+
+    function rp(key, cx, cy, alpha) {
+      const pv = key === 'b' ? G.prev.b : G.prev.p[key];
+      let x = cx, y = cy;
+      if (pv && Math.abs(cx - pv[0]) < 60 && Math.abs(cy - pv[1]) < 60) { x = pv[0] + (cx - pv[0]) * alpha; y = pv[1] + (cy - pv[1]) * alpha; }
+      const o = G.off[key]; if (o) { x += o[0]; y += o[1]; }
+      return [x, y];
+    }
+    function render(alpha) {
+      const S = G.S, B = S.ball, sc = view.scale * view.dpr;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(staticLayer, 0, 0);
+      ctx.setTransform(sc, 0, 0, sc, 0, 0);
+
+      if (!B.hid) {
+        const [bx, by] = rp('b', B.x, B.y, alpha);
+        ctx.beginPath(); ctx.arc(bx, by, BL.r, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#000000"; ctx.stroke();
+      }
+      const nameFs = Math.max(10, 13 / view.scale);
+      ctx.font = "bold " + nameFs + "px sans-serif"; ctx.textAlign = "center"; ctx.lineJoin = "round";
+      for (const id in S.players) {
+        const p = S.players[id], info = G.roster.get(+id); if (!info) continue;
+        const [x, y] = rp(id, p.x, p.y, alpha);
+        ctx.beginPath(); ctx.arc(x, y, PH.r, 0, Math.PI * 2);
+        if (info.t === 0) { ctx.fillStyle = "#facc15"; ctx.strokeStyle = "#000000"; } else { ctx.fillStyle = "#000000"; ctx.strokeStyle = "#facc15"; }
+        ctx.lineWidth = 3; ctx.fill(); ctx.stroke();
+        if (info.n && info.n.trim() !== "") {
+          ctx.lineWidth = 3 / view.scale; ctx.strokeStyle = "rgba(0,0,0,0.85)"; ctx.strokeText(info.n, x, y - PH.r - 6);
+          ctx.fillStyle = "#ffffff"; ctx.fillText(info.n, x, y - PH.r - 6);
+        }
+      }
+    }
+
+    window.refreshRoomList = function () {
+      const listEl = $('roomList');
+      let counts = {};
+      try { counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}'); } catch (e) {}
       listEl.innerHTML = PUBLIC_ROOMS.map(r => {
-        const playerCount = counts[r.id] || 0;
+        const n = counts[r.id] || 0;
         return `
-          <div class="p-1.5 bg-zinc-800 rounded flex items-center justify-between border border-zinc-700 mb-1">
-            <div>
-              <div class="font-bold text-yellow-400 text-xs">Sala ${r.name} <span class="text-[9px] text-zinc-400 font-normal">(${playerCount}/4 jogadores)</span></div>
+          <div class="room-card">
+            <div class="room-badge">${r.num}</div>
+            <div class="grow min-w-0">
+              <div class="room-name">${r.name}</div>
+              <div class="room-sub">⚽ ${n}/${MAX_PLAYERS_PER_ROOM} jogadores</div>
             </div>
-            <button onclick="window.joinPublicRoom('${r.id}', 'Sala ${r.name}')" class="px-2.5 py-0.5 rounded btn-yellow text-xs font-bold">Entrar</button>
-          </div>
-        `;
+            <button onclick="window.joinPublicRoom('${r.id}', '${r.name}')" class="room-go btn-yellow">Entrar</button>
+          </div>`;
       }).join('');
     };
 
-    function initGameSession(playerName) {
-      document.getElementById('lobbyScreen').classList.add('hidden');
-      document.getElementById('mainFooter').classList.add('hidden');
-      document.getElementById('gameScreen').classList.remove('hidden');
-      document.getElementById('victoryModal').classList.add('hidden');
-      document.getElementById('chatDrawer').classList.add('hidden');
-      document.getElementById('playersDrawer').classList.add('hidden');
-      document.getElementById('chatBadge').classList.add('hidden');
-
-      renderChatMessages();
-      playMatchMusic();
-
-      canvas.width = FIELD_CONFIG.width;
-      canvas.height = FIELD_CONFIG.height;
-
-      keys = {};
-      joystickVector = { x: 0, y: 0 };
-      lastFrameTime = performance.now();
-
-      const codeDisplayEl = document.getElementById('roomCodeDisplay');
-      const codeTextEl = document.getElementById('roomCodeText');
-      if (currentRoom.type === 'privada' && currentRoom.code) {
-        codeTextEl.innerText = currentRoom.code;
-        codeDisplayEl.style.display = 'flex';
-      } else {
-        codeDisplayEl.style.display = 'none';
-      }
-
-      document.getElementById('roomTitleDisplay').innerText = currentRoom.name || "Partida Online";
-
-      resetBall();
-      scores = { yellow: 0, black: 0 };
-      document.getElementById('scoreYellow').innerText = "0";
-      document.getElementById('scoreBlack').innerText = "0";
-
-      if (isHost) {
-        players = {};
-        players[localPlayerId] = {
-          id: localPlayerId,
-          name: playerName,
-          team: assignedTeam,
-          x: assignedTeam === 'yellow' ? FIELD_CONFIG.width * 0.25 : FIELD_CONFIG.width * 0.75,
-          y: FIELD_CONFIG.height / 2,
-          vx: 0,
-          vy: 0,
-          radius: PLAYER_DEFAULTS.radius,
-          accel: PLAYER_DEFAULTS.accel,
-          damping: PLAYER_DEFAULTS.damping,
-          inputs: { ax: 0, ay: 0 }
-        };
-        broadcastState();
-        renderPlayersManagement();
-      }
-
-      startMatchTimer();
-      requestAnimationFrame(gameLoop);
-    }
-
-    function startMatchTimer() {
-      if (matchTimerInterval) clearInterval(matchTimerInterval);
-      gameMatchTime = 300;
-      isGameOver = false;
-      goalLock = false;
-
-      matchTimerInterval = setInterval(() => {
-        if (gameMatchTime > 0 && !isGameOver) {
-          gameMatchTime--;
-          updateTimerDisplay();
-        } else if (gameMatchTime <= 0 && !isGameOver) {
-          finishMatch();
-        }
-      }, 1000);
-
-      updateTimerDisplay();
-    }
-
-    function updateTimerDisplay() {
-      const minutes = Math.floor(gameMatchTime / 60);
-      const seconds = gameMatchTime % 60;
-      document.getElementById('gameTimer').innerText = 
-        String(minutes).padStart(2, '0') + ":" + String(seconds).padStart(2, '0');
-    }
-
-    function finishMatch() {
-      if (isGameOver) return;
-      isGameOver = true;
-      if (matchTimerInterval) clearInterval(matchTimerInterval);
-
-      playVictoryTune();
-
-      let winner = 'empate';
-      if (scores.yellow > scores.black) winner = 'yellow';
-      else if (scores.black > scores.yellow) winner = 'black';
-
-      displayVictoryScreen(winner);
-
-      if (isHost) {
-        connections.forEach(c => {
-          if (c.open) c.send({ type: 'GAME_OVER', winnerTeam: winner });
-        });
-      }
-    }
-
-    function displayVictoryScreen(winnerTeam) {
-      const msgEl = document.getElementById('victoryMessage');
-      if (winnerTeam === 'yellow') {
-        msgEl.className = "text-xs md:text-sm font-black tracking-wide mb-2 uppercase text-yellow-400";
-        msgEl.innerText = "FIM DE JOGO - VITÓRIA DO TIME AMARELO!";
-      } else if (winnerTeam === 'black') {
-        msgEl.className = "text-xs md:text-sm font-black tracking-wide mb-2 uppercase text-zinc-200";
-        msgEl.innerText = "FIM DE JOGO - VITÓRIA DO TIME PRETO!";
-      } else {
-        msgEl.className = "text-xs md:text-sm font-black tracking-wide mb-2 uppercase text-white";
-        msgEl.innerText = "FIM DE JOGO - EMPATE!";
-      }
-
-      document.getElementById('victoryModal').classList.remove('hidden');
-    }
-
-    window.leaveRoom = function() {
-      intentionalLeave = true;
-
-      if (currentRoom && currentRoom.type === 'publica') {
-        try {
-          let counts = JSON.parse(localStorage.getItem('futrok_player_counts') || '{}');
-          counts[currentRoom.id] = 0;
-          localStorage.setItem('futrok_player_counts', JSON.stringify(counts));
-        } catch(e){}
-      }
-
-      if (conn) {
-        try { conn.close(); } catch(e){}
-        conn = null;
-      }
-      connections.forEach(c => { try { c.close(); } catch(e){} });
-      connections = [];
-
-      if (peer) {
-        peer.destroy();
-        peer = null;
-      }
-
-      currentRoom = null;
-      isHost = false;
-      players = {};
-      chatMessages = [];
-      
-      playMenuMusic();
-
-      document.getElementById('gameScreen').classList.add('hidden');
-      document.getElementById('lobbyScreen').classList.remove('hidden');
-      document.getElementById('mainFooter').classList.remove('hidden');
-      document.getElementById('victoryModal').classList.add('hidden');
-      document.getElementById('chatDrawer').classList.add('hidden');
-      document.getElementById('playersDrawer').classList.add('hidden');
-      window.refreshRoomList();
-    };
-
-    function resetBall() {
-      ball.x = FIELD_CONFIG.width / 2;
-      ball.y = FIELD_CONFIG.height / 2;
-      ball.vx = 0;
-      ball.vy = 0;
-      ball.hidden = false;
-    }
-
-    function gameLoop(currentTime) {
-      if (!currentRoom) return;
-
-      const dt = (currentTime - lastFrameTime) / 16.6667;
-      lastFrameTime = currentTime;
-
-      updatePhysics(Math.min(dt, 2.0));
-      renderField();
-
-      requestAnimationFrame(gameLoop);
-    }
-
-    function updatePhysics(dt) {
-      const p = players[localPlayerId];
-      if (!p || isGameOver) return;
-
-      let ax = 0;
-      let ay = 0;
-
-      if (keys['arrowleft'] || keys['a']) ax -= p.accel;
-      if (keys['arrowright'] || keys['d']) ax += p.accel;
-      if (keys['arrowup'] || keys['w']) ay -= p.accel;
-      if (keys['arrowdown'] || keys['s']) ay += p.accel;
-
-      if (joystickVector.x !== 0 || joystickVector.y !== 0) {
-        ax += joystickVector.x * p.accel;
-        ay += joystickVector.y * p.accel;
-      }
-
-      if (isHost) {
-        p.inputs = { ax, ay };
-
-        Object.values(players).forEach(pl => {
-          const input = pl.inputs || { ax: 0, ay: 0 };
-          pl.vx += input.ax * dt;
-          pl.vy += input.ay * dt;
-          pl.vx *= Math.pow(pl.damping, dt);
-          pl.vy *= Math.pow(pl.damping, dt);
-
-          pl.x += pl.vx * dt;
-          pl.y += pl.vy * dt;
-
-          pl.x = Math.max(pl.radius, Math.min(FIELD_CONFIG.width - pl.radius, pl.x));
-          pl.y = Math.max(pl.radius, Math.min(FIELD_CONFIG.height - pl.radius, pl.y));
-        });
-
-        if (!ball.hidden) {
-          ball.x += ball.vx * dt;
-          ball.y += ball.vy * dt;
-          ball.vx *= Math.pow(ball.damping, dt);
-          ball.vy *= Math.pow(ball.damping, dt);
-        }
-
-        const plArray = Object.values(players);
-        for (let i = 0; i < plArray.length; i++) {
-          for (let j = i + 1; j < plArray.length; j++) {
-            const p1 = plArray[i];
-            const p2 = plArray[j];
-            const dx = p2.x - p1.x;
-            const dy = p2.y - p1.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const minDist = p1.radius + p2.radius;
-
-            if (dist < minDist) {
-              const nx = dx / (dist || 1);
-              const ny = dy / (dist || 1);
-              const overlap = (minDist - dist) * 0.5;
-
-              p1.x -= nx * overlap;
-              p1.y -= ny * overlap;
-              p2.x += nx * overlap;
-              p2.y += ny * overlap;
-            }
-          }
-        }
-
-        if (!ball.hidden) {
-          Object.values(players).forEach(pl => {
-            const dx = ball.x - pl.x;
-            const dy = ball.y - pl.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const minDist = pl.radius + ball.radius;
-
-            if (dist < minDist) {
-              const nx = dx / (dist || 1);
-              const ny = dy / (dist || 1);
-
-              const overlap = minDist - dist;
-              ball.x += nx * overlap;
-              ball.y += ny * overlap;
-
-              ball.vx = pl.vx * 1.05 + nx * 0.45;
-              ball.vy = pl.vy * 1.05 + ny * 0.45;
-            }
-          });
-
-          if (keys[' '] || keys['x']) {
-            keys[' '] = false;
-            keys['x'] = false;
-            const dx = ball.x - p.x;
-            const dy = ball.y - p.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < p.radius + ball.radius + 18) {
-              const nx = dx / (dist || 1);
-              const ny = dy / (dist || 1);
-              ball.vx = nx * PLAYER_DEFAULTS.kickPower;
-              ball.vy = ny * PLAYER_DEFAULTS.kickPower;
-              playKickSound();
-            }
-          }
-        }
-
-        broadcastState();
-
-      } else if (conn && conn.open) {
-        conn.send({ type: 'PLAYER_MOVE', playerId: localPlayerId, inputs: { ax, ay } });
-      }
-
-      if (!ball.hidden && isHost) {
-        const goalTop = (FIELD_CONFIG.height - FIELD_CONFIG.goalSize) / 2;
-        const goalBottom = (FIELD_CONFIG.height + FIELD_CONFIG.goalSize) / 2;
-
-        if (ball.y - ball.radius < 0) {
-          ball.y = ball.radius;
-          ball.vy *= -0.6;
-          playBounceSound();
-        }
-        if (ball.y + ball.radius > FIELD_CONFIG.height) {
-          ball.y = FIELD_CONFIG.height - ball.radius;
-          ball.vy *= -0.6;
-          playBounceSound();
-        }
-
-        if (ball.x - ball.radius < 0) {
-          if (ball.y > goalTop && ball.y < goalBottom) {
-            if (!goalLock) triggerGoal('black');
-          } else {
-            ball.x = ball.radius;
-            ball.vx *= -0.6;
-            playBounceSound();
-          }
-        }
-
-        if (ball.x + ball.radius > FIELD_CONFIG.width) {
-          if (ball.y > goalTop && ball.y < goalBottom) {
-            if (!goalLock) triggerGoal('yellow');
-          } else {
-            ball.x = FIELD_CONFIG.width - ball.radius;
-            ball.vx *= -0.6;
-            playBounceSound();
-          }
-        }
-      }
-    }
-
-    function triggerGoal(teamScored) {
-      goalLock = true;
-      ball.hidden = true;
-      ball.vx = 0;
-      ball.vy = 0;
-
-      scores[teamScored]++;
-
-      document.getElementById('scoreYellow').innerText = scores.yellow;
-      document.getElementById('scoreBlack').innerText = scores.black;
-
-      playGoalSound();
-
-      if (isHost) {
-        connections.forEach(c => {
-          if (c.open) c.send({ type: 'GOAL_EVENT', scores });
-        });
-      }
-
-      if (scores[teamScored] >= 10) {
-        finishMatch();
-      } else {
-        setTimeout(() => {
-          resetBall();
-          goalLock = false;
-        }, 1200);
-      }
-    }
-
-    function renderField() {
-      ctx.clearRect(0, 0, FIELD_CONFIG.width, FIELD_CONFIG.height);
-
-      ctx.fillStyle = "#18181b";
-      ctx.fillRect(0, 0, FIELD_CONFIG.width, FIELD_CONFIG.height);
-
-      ctx.strokeStyle = "rgba(250, 204, 21, 0.4)";
-      ctx.lineWidth = 2;
-
-      ctx.beginPath();
-      ctx.moveTo(FIELD_CONFIG.width / 2, 0);
-      ctx.lineTo(FIELD_CONFIG.width / 2, FIELD_CONFIG.height);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(FIELD_CONFIG.width / 2, FIELD_CONFIG.height / 2, 60, 0, Math.PI * 2);
-      ctx.stroke();
-
-      const goalTop = (FIELD_CONFIG.height - FIELD_CONFIG.goalSize) / 2;
-      
-      ctx.fillStyle = "rgba(250, 204, 21, 0.2)";
-      ctx.fillRect(0, goalTop, 12, FIELD_CONFIG.goalSize);
-      ctx.strokeStyle = "#facc15";
-      ctx.strokeRect(0, goalTop, 12, FIELD_CONFIG.goalSize);
-
-      ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-      ctx.fillRect(FIELD_CONFIG.width - 12, goalTop, 12, FIELD_CONFIG.goalSize);
-      ctx.strokeStyle = "#ffffff";
-      ctx.strokeRect(FIELD_CONFIG.width - 12, goalTop, 12, FIELD_CONFIG.goalSize);
-
-      if (!ball.hidden) {
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-        ctx.fillStyle = "#ffffff";
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "#000000";
-        ctx.stroke();
-      }
-
-      Object.values(players).forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-
-        if (p.team === 'yellow') {
-          ctx.fillStyle = "#facc15";
-          ctx.strokeStyle = "#000000";
-        } else {
-          ctx.fillStyle = "#000000";
-          ctx.strokeStyle = "#facc15";
-        }
-
-        ctx.lineWidth = 3;
-        ctx.fill();
-        ctx.stroke();
-
-        if (p.name && p.name.trim() !== "") {
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 10px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(p.name, p.x, p.y - p.radius - 4);
-        }
-      });
-    }
-
     window.onload = () => {
       window.refreshRoomList();
+      if (isTouchDevice) { joystickBase.style.display = 'block'; kickBtn.style.display = 'flex'; }
     };
   </script>
 </body>
