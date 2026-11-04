@@ -91,12 +91,12 @@
     #roomCodeFoot { display: none; }
     .timer, .score, .pbtn { white-space: nowrap; }
     @media (max-width: 720px) {
-      :root { --fs-sm: 12px; --fs: 14px; --fs-lg: 17px; --fs-score: 22px; --fs-timer: 18px; --bar: 42px; --hdr: 38px; --foot: 30px; }
+      :root { --fs-sm: 13.5px; --fs: 15px; --fs-lg: 18px; --fs-score: 26px; --fs-timer: 21px; --bar: 46px; --hdr: 38px; --foot: 30px; }
       header { justify-content: space-between !important; }
       header h1 { position: static !important; transform: none !important; font-size: 17px !important; }
       .hlabel, .btn-label, .tname { display: none !important; }
       .hbtn { padding: 0 .6em; }
-      .pbtn { padding: .4em .6em; }
+      .pbtn { padding: .45em .8em; font-size: 14px; }
       .card { padding: 10px; border-radius: 14px; }
       .room-card { padding: 6px 10px; gap: 10px; }
       #roomCodeDisplay { display: none !important; }
@@ -256,7 +256,6 @@
 
   <!-- Footer do lobby -->
   <footer id="mainFooter" class="text-center text-zinc-400 font-mono tracking-wider shrink-0 flex items-center justify-center font-bold z-30" style="height: var(--foot); font-size: var(--fs-sm)">
-    FutROK v2
   </footer>
 
   <script>
